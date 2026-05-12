@@ -1,4 +1,30 @@
 /**:
   ros__parameters:
+    # CAN frame 定时发布周期，单位秒。0.01 就是大约 100 Hz。
     publish_timer_loop_duration: 0.01 #[sec]
-      
+
+    # 留空时会默认加载 model_controller/affine_command_correction.pt。
+    model_path: ""
+
+    # 模型需要知道车现在真实跑得怎么样。
+    # 这个 topic 给前向速度 meas_v，用 twist.twist.linear.x。
+    velocity_body_topic: "/aiformula_sensing/vectornav/velocity_body"
+
+    # 这个 topic 给 yaw rate meas_omega，用 twist.twist.angular.z。
+    odom_topic: "/aiformula_sensing/gyro_odometry_publisher/odom"
+
+    # 训练时历史是 0.05 秒一个点。runtime 也按这个周期采样历史。
+    # 如果 command callback 来得更快，不会每次都写进 history。
+    history_sample_period_sec: 0.05
+
+    # 20 个样本的训练跨度大概是 0.95 秒。
+    # runtime 历史跨度和它差太多时，就先不用模型，直接发 base command。
+    history_span_tolerance_sec: 0.30
+
+    # 修正后的 command 限幅，防止模型异常时发出太大的速度命令。
+    max_corrected_v: 3.0
+    max_corrected_omega: 1.0
+
+    # 打开后会记录每一步的 a,b、修正前 command、修正后 command 和 RPM。
+    debug_compare_enabled: true
+    debug_csv_path: "affine_command_correction_debug.csv"
