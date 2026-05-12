@@ -1,1 +1,0 @@
-The vehicle dynamics are still in the testing and research stage and have not yet been used in practical experiments.
