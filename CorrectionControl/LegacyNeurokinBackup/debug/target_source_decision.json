@@ -1,8 +1,0 @@
-{
-  "delta_theta_consistent": false,
-  "delta_x_consistent": false,
-  "reason": "Pose delta consistency failed for x=True and theta=True; velocity-integrated targets selected.",
-  "requested_target_source_mode": "auto",
-  "selected_model_type": "constrained_velocity_gru",
-  "selected_target_source_mode": "velocity_integrated"
-}

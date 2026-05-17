@@ -440,7 +440,6 @@ CorrectionControl/
 ```text
 CorrectionControl/Training/
 CorrectionControl/Temp/
-CorrectionControl/LegacyNeurokinBackup/
 CorrectionControl/docs/
 ```
 
@@ -448,7 +447,6 @@ CorrectionControl/docs/
 
 - `Training/`：当前 CorrectionControl 的训练、可视化脚本、checkpoint、报告和图；
 - `Temp/`：用 `ros2unbag` 从 bag 导出的临时 CSV，以及对齐后的训练输入；
-- `LegacyNeurokinBackup/`：旧 `neurokin_mpc` 的轻量备份；
 - `docs/`：当前模型和整理状态说明。
 
 本次已经验证的数据链路是：

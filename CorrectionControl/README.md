@@ -6,7 +6,7 @@ It contains:
 
 - the active CorrectionControl training project,
 - the generated temporary data used to verify the bag-to-training pipeline,
-- a lightweight backup of the old `neurokin_mpc` forward-model project.
+- model explanation documents and generated figures.
 
 ## Directory Layout
 
@@ -23,49 +23,42 @@ CorrectionControl/
   Temp/
     ros2unbag_exports/
     processed/
-  LegacyNeurokinBackup/
   docs/
 ```
 
 ## What Was Done
 
-1. The old local `neurokin_mpc` project was backed up under:
-
-```text
-CorrectionControl/LegacyNeurokinBackup
-```
-
-The backup excludes raw bag data, training runs, Python caches, and `.pyc` files.
-
-2. The affine command-correction experiment was reorganized as:
+1. The affine command-correction experiment was reorganized as:
 
 ```text
 CorrectionControl/Training
 ```
 
-3. The bag-to-training pipeline was verified using:
+2. The bag-to-training pipeline was verified using:
 
 ```text
 E:\Mess\Projects\Programming\aiformula\aiformula_sophia\bag\bag\rosbag2_2026_01_20-15_31_07
 ```
 
-4. `ros2unbag` exported the three required topics into:
+3. `ros2unbag` exported the three required topics into:
 
 ```text
 CorrectionControl/Temp/ros2unbag_exports
 ```
 
-5. The exported CSVs were aligned into:
+4. The exported CSVs were aligned into:
 
 ```text
 CorrectionControl/Temp/processed/aligned_timeseries.csv
 ```
 
-6. Training was rerun from the generated aligned CSV. The current trained checkpoint is:
+5. Training was rerun from the generated aligned CSV. The current trained checkpoint is:
 
 ```text
 CorrectionControl/Training/models/correction_control.pt
 ```
+
+Unused legacy forward-model backup files have been removed from this local working copy.
 
 ## Model Summary
 

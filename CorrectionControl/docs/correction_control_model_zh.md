@@ -209,11 +209,12 @@ CorrectionControl/
 
 包括：
 
-- `LegacyNeurokinBackup/`：旧 `neurokin_mpc` 的轻量备份；
 - `Training/`：当前 CorrectionControl 训练脚本、模型、图和报告；
 - `Temp/ros2unbag_exports/`：ros2unbag 导出的三个 topic CSV；
 - `Temp/processed/`：对齐后的训练输入；
 - `docs/`：模型和 motor controller 说明文档。
+
+旧 forward-model 备份内容已经从这个本地工作目录清理掉，当前目录只保留 CorrectionControl 需要的训练、数据链路、模型、图和说明文档。
 
 使用的 bag 是：
 
