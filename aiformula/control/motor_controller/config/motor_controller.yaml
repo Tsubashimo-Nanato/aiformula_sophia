@@ -3,7 +3,7 @@
     # CAN frame 定时发布周期，单位秒。0.01 就是大约 100 Hz。
     publish_timer_loop_duration: 0.01 #[sec]
 
-    # 留空时会默认加载 model_controller/affine_command_correction.pt。
+    # 留空时会默认加载 model_controller/correction_control.pt。
     model_path: ""
 
     # 模型需要知道车现在真实跑得怎么样。
@@ -27,4 +27,4 @@
 
     # 打开后会记录每一步的 a,b、修正前 command、修正后 command 和 RPM。
     debug_compare_enabled: true
-    debug_csv_path: "affine_command_correction_debug.csv"
+    debug_csv_path: "correction_control_debug.csv"

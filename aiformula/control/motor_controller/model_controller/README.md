@@ -1,6 +1,6 @@
-# Affine Command-Correction Motor Controller Model
+# CorrectionControl Motor Controller Model
 
-Place `affine_command_correction.pt` in this folder.
+Place `correction_control.pt` in this folder.
 
 The active `motor_controller` executable loads this checkpoint as a runtime command-correction model.
 
@@ -25,4 +25,4 @@ Outgoing CAN frames keep the same ID and 8-byte payload layout as the backed-up 
 - bytes 0-3: right wheel RPM, signed int32 little-endian
 - bytes 4-7: left wheel RPM, signed int32 little-endian
 
-The debug comparison CSV defaults to this same `model_controller` folder as `affine_command_correction_debug.csv`, so it can be copied from beside the deployed model weight after a vehicle run.
+The debug comparison CSV defaults to this same `model_controller` folder as `correction_control_debug.csv`, so it can be copied from beside the deployed model weight after a vehicle run.

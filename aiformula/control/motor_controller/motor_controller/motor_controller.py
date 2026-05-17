@@ -49,7 +49,7 @@ from rclpy.node import Node
 from torch import nn
 
 
-class AffineCommandCorrectionModel(nn.Module):
+class CorrectionControlModel(nn.Module):
     """
     这个网络只负责估计动态的 a 和 b。
 
@@ -143,7 +143,7 @@ class MotorController(Node):
 
         # debug CSV 会记录每次模型估计的 a,b，以及修正前后的 command。
         self.declare_parameter("debug_compare_enabled", True)
-        self.declare_parameter("debug_csv_path", "affine_command_correction_debug.csv")
+        self.declare_parameter("debug_csv_path", "correction_control_debug.csv")
 
         publish_timer_loop_duration = self.get_parameter("publish_timer_loop_duration").get_parameter_value().double_value
         self.tread = float(self.get_parameter("wheel.tread").value)
@@ -220,7 +220,7 @@ class MotorController(Node):
         self.frame_msg.data = self.toCanCmd(0) + self.toCanCmd(0)
 
         self.open_debug_csv()
-        self.log_info("Loaded affine command-correction motor controller model.")
+        self.log_info("Loaded CorrectionControl command-correction motor controller model.")
         self.log_info(f"Subscribing velocity-body response from: {self.velocity_body_topic}")
         self.log_info(f"Subscribing odometry yaw-rate response from: {self.odom_topic}")
 
@@ -232,7 +232,7 @@ class MotorController(Node):
         return super().destroy_node()
 
     def resolve_debug_csv_path(self, configured: str) -> Path:
-        path = Path(configured or "affine_command_correction_debug.csv").expanduser()
+        path = Path(configured or "correction_control_debug.csv").expanduser()
         if not path.is_absolute():
             path = self.model_controller_dir() / path
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -286,15 +286,15 @@ class MotorController(Node):
             if path.exists():
                 return path
 
-        # 默认加载已经复制到 model_controller 文件夹里的新 affine 权重。
-        return self.model_controller_dir() / "affine_command_correction.pt"
+        # 默认加载已经复制到 model_controller 文件夹里的 CorrectionControl 权重。
+        return self.model_controller_dir() / "correction_control.pt"
 
     def load_model(self):
         # checkpoint 里除了模型参数，也保存了训练时的 mean/std 和列名。
         # runtime 必须用同一套 normalization，不然模型输入尺度会错。
         model_path = self.resolve_model_path()
         if not model_path.exists():
-            raise FileNotFoundError(f"Affine command-correction weight not found: {model_path}")
+            raise FileNotFoundError(f"CorrectionControl weight not found: {model_path}")
         try:
             checkpoint = torch.load(model_path, map_location="cpu", weights_only=False)
         except TypeError:
@@ -304,7 +304,7 @@ class MotorController(Node):
         feature_columns = list(checkpoint["feature_cols"])
         command_columns = list(checkpoint["command_cols"])
         history_steps = int(config.get("history_steps", 20))
-        model = AffineCommandCorrectionModel(
+        model = CorrectionControlModel(
             history_dim=len(feature_columns),
             hidden_size=int(config.get("hidden_size", 32)),
             gru_layers=int(config.get("gru_layers", 1)),
