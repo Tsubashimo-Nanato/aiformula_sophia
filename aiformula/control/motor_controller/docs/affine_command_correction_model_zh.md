@@ -426,3 +426,45 @@ runtime 用这个关系反解 corrected cmd_vel；
 ```
 
 神经网络负责估计车辆当前响应偏差，motor controller 负责把这个偏差变成实际可发送的电机命令。
+
+## 12. 当前仓库整理状态
+
+这套模型和训练链路现在统一整理到仓库根目录：
+
+```text
+CorrectionControl/
+```
+
+其中：
+
+```text
+CorrectionControl/Training/
+CorrectionControl/Temp/
+CorrectionControl/LegacyNeurokinBackup/
+CorrectionControl/docs/
+```
+
+含义分别是：
+
+- `Training/`：当前 CorrectionControl 的训练、可视化脚本、checkpoint、报告和图；
+- `Temp/`：用 `ros2unbag` 从 bag 导出的临时 CSV，以及对齐后的训练输入；
+- `LegacyNeurokinBackup/`：旧 `neurokin_mpc` 的轻量备份；
+- `docs/`：当前模型和整理状态说明。
+
+本次已经验证的数据链路是：
+
+```text
+bag
+  -> ros2unbag topic export
+  -> aligned_timeseries.csv
+  -> train_correction_control.py
+  -> correction_control.pt
+  -> visualize_correction_control.py
+  -> figures/
+```
+
+新的主文档在：
+
+```text
+CorrectionControl/docs/correction_control_model_zh.md
+```

@@ -1,0 +1,9 @@
+{
+  "epochs_ran": 3,
+  "final_loss": 0.05538301542401314,
+  "initial_loss": 0.3272964656352997,
+  "passed": true,
+  "required_final_loss_below": 0.08182411640882492,
+  "sample_count": 64,
+  "warning": null
+}

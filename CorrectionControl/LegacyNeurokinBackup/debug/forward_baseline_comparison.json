@@ -1,0 +1,9 @@
+{
+  "final_heading_error_cmd_baseline": 1.1415739549302089,
+  "final_heading_error_model": 0.04328969418818929,
+  "final_position_error_cmd_baseline": 19.42398614747486,
+  "final_position_error_model": 0.46994658465620615,
+  "model_better_than_cmd_baseline_heading": true,
+  "model_better_than_cmd_baseline_position": true,
+  "steps": 292
+}

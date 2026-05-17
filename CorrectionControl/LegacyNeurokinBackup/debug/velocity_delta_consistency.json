@@ -1,0 +1,145 @@
+{
+  "available_columns": [
+    "timestamp",
+    "cmd_v",
+    "cmd_omega",
+    "valid_cmd_vel",
+    "odom_x",
+    "odom_y",
+    "odom_qw",
+    "odom_qx",
+    "odom_qy",
+    "odom_qz",
+    "odom_vx",
+    "odom_vy",
+    "odom_omega_z",
+    "odom_yaw",
+    "odom_yaw_unwrapped",
+    "valid_odom",
+    "rear_yaw_raw",
+    "rear_yaw",
+    "valid_rear_yaw",
+    "imu_gyro_z",
+    "imu_acc_x",
+    "imu_acc_y",
+    "valid_imu",
+    "vn_body_vx",
+    "vn_body_vy",
+    "vn_body_angular_z",
+    "valid_velocity_body",
+    "rear_yaw_rate",
+    "delta_x_body",
+    "delta_y_body",
+    "delta_theta",
+    "v_next",
+    "omega_next",
+    "valid_interpolation",
+    "valid_features",
+    "valid_targets",
+    "valid_quality",
+    "valid_for_history_input",
+    "valid_for_target"
+  ],
+  "delta_theta": {
+    "comparisons": {
+      "pose_delta_theta_vs_imu_gyro_dt": {
+        "bias": -2.387001546959173e-05,
+        "correlation": 0.8518731974520809,
+        "count": 2154,
+        "intercept": 0.0007195657071515312,
+        "mae": 0.0013000694475238923,
+        "rmse": 0.002076717296053737,
+        "slope": 0.7410653656464038,
+        "std_error": 0.0020765801092397637
+      },
+      "pose_delta_theta_vs_odom_omega_dt": {
+        "bias": -1.6615603223633245e-05,
+        "correlation": 0.8446307340843727,
+        "count": 2223,
+        "intercept": 0.0006976134647092587,
+        "mae": 0.0013767693076244662,
+        "rmse": 0.0021088200456866467,
+        "slope": 0.7484694157931778,
+        "std_error": 0.002108754586674169
+      }
+    },
+    "pose_delta_theta_is_consistent": false,
+    "thresholds": {
+      "max_rmse": 0.002,
+      "min_corr": 0.7
+    },
+    "warning": "Pose-derived delta_theta is not sufficiently consistent with available yaw-rate signals."
+  },
+  "delta_theta_vs_imu_gyro_dt": {
+    "bias": -2.387001546959173e-05,
+    "correlation": 0.8518731974520809,
+    "count": 2154,
+    "intercept": 0.0007195657071515312,
+    "mae": 0.0013000694475238923,
+    "rmse": 0.002076717296053737,
+    "slope": 0.7410653656464038,
+    "std_error": 0.0020765801092397637
+  },
+  "delta_theta_vs_odom_omega_dt": {
+    "bias": -1.6615603223633245e-05,
+    "correlation": 0.8446307340843727,
+    "count": 2223,
+    "intercept": 0.0006976134647092587,
+    "mae": 0.0013767693076244662,
+    "rmse": 0.0021088200456866467,
+    "slope": 0.7484694157931778,
+    "std_error": 0.002108754586674169
+  },
+  "delta_x": {
+    "comparisons": {
+      "pose_delta_x_vs_odom_vx_dt": {
+        "bias": -0.12618199607477193,
+        "correlation": -0.009705723218301059,
+        "count": 2223,
+        "intercept": -0.009163950264679768,
+        "mae": 0.134532943108939,
+        "rmse": 0.16123316341019844,
+        "slope": -0.014760062051364061,
+        "std_error": 0.10037049790573922
+      },
+      "pose_delta_x_vs_vn_body_vx_dt": {
+        "bias": -0.0013218818879499204,
+        "correlation": 0.08299235665493367,
+        "count": 2208,
+        "intercept": 0.11251079899265429,
+        "mae": 0.04207077328349587,
+        "rmse": 0.054859297482172956,
+        "slope": 0.013756543156982222,
+        "std_error": 0.05484336923012533
+      }
+    },
+    "pose_delta_x_is_consistent": false,
+    "thresholds": {
+      "max_rmse": 0.03,
+      "min_corr": 0.7
+    },
+    "warning": "Pose-derived delta_x_body appears noisy. Velocity-derived rollout may be more reliable."
+  },
+  "delta_x_body_vs_odom_vx_dt": {
+    "bias": -0.12618199607477193,
+    "correlation": -0.009705723218301059,
+    "count": 2223,
+    "intercept": -0.009163950264679768,
+    "mae": 0.134532943108939,
+    "rmse": 0.16123316341019844,
+    "slope": -0.014760062051364061,
+    "std_error": 0.10037049790573922
+  },
+  "delta_x_body_vs_vn_body_vx_dt": {
+    "bias": -0.0013218818879499204,
+    "correlation": 0.08299235665493367,
+    "count": 2208,
+    "intercept": 0.11251079899265429,
+    "mae": 0.04207077328349587,
+    "rmse": 0.054859297482172956,
+    "slope": 0.013756543156982222,
+    "std_error": 0.05484336923012533
+  },
+  "dt_median": 0.04999999999999716,
+  "warning": "Pose-derived delta_x_body appears noisy. Velocity-derived rollout may be more reliable."
+}

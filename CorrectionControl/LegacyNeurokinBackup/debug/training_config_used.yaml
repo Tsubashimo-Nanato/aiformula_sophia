@@ -1,0 +1,380 @@
+project:
+  name: neurokin_mpc
+experiment:
+  name: exp_auto_target_source
+  description: Auto target-source forward-model experiment with consistency diagnostics
+paths:
+  processed_dir: bag/processed
+  debug_dir: debug
+  visualization_dir: null
+  visualization_subdir: visualization
+  runs_dir: runs
+  use_runs: true
+  weights_dir: weights
+  changelog_dir: changelog
+  model_dir: models
+  models_dir: models
+  output_model_name: neurokin_forward_model.pt
+data:
+  processed_dir: bag/processed
+  processed_csv: null
+  target_source_mode: auto
+  available_target_source_modes:
+  - auto
+  - pose_delta
+  - velocity_integrated
+  - hybrid_velocity_x_pose_theta
+  - hybrid_pose_x_velocity_theta
+  pose_delta_columns:
+  - delta_x_body
+  - delta_y_body
+  - delta_theta
+  velocity_columns:
+  - odom_vx
+  - odom_vy
+  - odom_omega_z
+  - vn_body_vx
+  - vn_body_vy
+  - imu_gyro_z
+  timestamp_candidates:
+  - timestamp
+  - timestamp_sec
+  - time
+  - t
+  feature_columns:
+  - cmd_v
+  - cmd_omega
+  - odom_vx
+  - odom_vy
+  - odom_omega_z
+  - imu_acc_x
+  - imu_acc_y
+  - imu_gyro_z
+  - vn_body_vx
+  - vn_body_vy
+  - rear_yaw
+  - rear_yaw_rate
+  optional_feature_columns:
+  - vn_body_vx
+  - vn_body_vy
+  required_core_features:
+  - cmd_v
+  - cmd_omega
+  - odom_vx
+  - odom_omega_z
+  - imu_acc_x
+  - imu_acc_y
+  - imu_gyro_z
+  - rear_yaw
+  - rear_yaw_rate
+  core_feature_columns:
+  - cmd_v
+  - cmd_omega
+  - odom_vx
+  - odom_vy
+  - odom_omega_z
+  - imu_acc_x
+  - imu_acc_y
+  - imu_gyro_z
+  - rear_yaw
+  - rear_yaw_rate
+  target_columns:
+  - delta_x_body
+  - delta_y_body
+  - delta_theta
+  - v_next
+  - omega_next
+  derived_target_columns:
+  - vy_body_next
+  planner_safe_feature_columns:
+  - cmd_v
+  - cmd_omega
+  - odom_vx
+  - odom_vy
+  - odom_omega_z
+  - rear_yaw
+  - rear_yaw_rate
+  use_planner_safe_features: false
+  preferred_csv_names:
+  - aligned_timeseries.csv
+  - trainable_timeseries.csv
+  - processed_timeseries.csv
+  - neurokin_processed.csv
+  allow_missing_optional_features: true
+  history_steps: 20
+  prediction_horizon_steps: 1
+  dt: 0.05
+  train_ratio: 0.7
+  val_ratio: 0.15
+  test_ratio: 0.15
+  split_method: chronological
+  drop_nan_rows: true
+  standardize_features: true
+  standardize_targets: false
+model:
+  type: auto
+  available_types:
+  - raw_delta_gru
+  - constrained_velocity_gru
+  - hybrid_gru
+  input_size: auto
+  output_size: 5
+  hidden_size: 64
+  num_layers: 2
+  dropout: 0.05
+  mlp_hidden_sizes:
+  - 128
+  - 64
+  use_residual_baseline: true
+  output_mode: velocity_rate
+  derive_deltas_from_velocity: true
+  use_trapezoidal_integration: true
+  predict_lateral_velocity: true
+baseline:
+  type: ideal_diff_drive
+  use_cmd_for_delta: true
+  use_wheel_speeds_if_available: false
+  wheel_radius: null
+  wheel_base: null
+training:
+  seed: 42
+  batch_size: 128
+  epochs: 500
+  learning_rate: 0.001
+  weight_decay: 1.0e-05
+  gradient_clip_norm: 1.0
+  early_stopping_patience: 30
+  early_stopping_min_delta: 1.0e-06
+  lr_scheduler: reduce_on_plateau
+  num_workers: 0
+  device: auto
+  log_interval: 1
+  resume_from_checkpoint: null
+  allow_resume_only_if_same_model_signature: true
+  force_retrain_from_scratch: true
+  small_batch_size: 64
+  small_batch_epochs: 200
+  smoke_train_samples: 128
+target_selection:
+  auto_select_target_source: true
+  prefer_velocity_for_x_if_pose_delta_x_inconsistent: true
+  prefer_imu_or_odom_for_theta_if_consistent: true
+  max_delta_x_velocity_rmse_for_consistency: 0.03
+  min_delta_x_velocity_corr_for_consistency: 0.7
+  max_delta_theta_omega_rmse_for_consistency: 0.002
+  min_delta_theta_omega_corr_for_consistency: 0.7
+checkpointing:
+  use_experiment_subdir: true
+  save_every_epoch: true
+  save_best: true
+  save_last: true
+  copy_final_pt_to_root_weights: true
+  root_weights_name_format: epoch{epoch:04d}_{datetime}.pt
+  datetime_format: '%Y%m%d_%H%M%S'
+  promote_only_if_better: true
+  keep_all_epoch_checkpoints: true
+  checkpoint_name_format: epoch_{epoch:04d}_val_{val_loss:.8f}.pt
+  best_checkpoint_name: best.pt
+  last_checkpoint_name: last.pt
+  save_optimizer_state: true
+  save_scheduler_state: true
+  prune_old_checkpoints: false
+  keep_last_n: 10
+  best_metric: val_loss
+loss:
+  type: multi_objective
+  weights:
+    v_next: 1.0
+    omega_next: 3.0
+    vy_body_next: 2.0
+    delta_x_body: 0.5
+    delta_y_body: 5.0
+    delta_theta: 10.0
+    rollout_position: 1.0
+    rollout_heading: 2.0
+    theta_consistency: 10.0
+    x_consistency: 2.0
+  use_rollout_loss: true
+  rollout_loss_steps: 20
+  rollout_loss_batch_fraction: 0.25
+evaluation:
+  rollout_steps:
+  - 20
+  - 50
+  - 100
+  - 200
+  save_debug_plots: true
+  save_prediction_csv: true
+  prediction_preview_rows: 300
+  evaluate_command_only_baseline: true
+  evaluate_nominal_unicycle_baseline: true
+  evaluate_ideal_diff_drive_baseline: true
+  evaluate_model_rollout: true
+  evaluate_odom_actual_path: true
+  evaluate_entire_course: true
+  evaluate_stepwise_trajectory: true
+  evaluate_command_baseline: true
+  evaluate_actual_odom: true
+  evaluate_raw_delta_model: true
+  evaluate_constrained_velocity_model: true
+  debug_start_index: null
+  debug_split: test
+  rollout_split: all
+  compare_by_percent: true
+  percent_step: 10
+  max_allowed_forward_rollout_error_m: 1.0
+  max_allowed_forward_heading_error_rad: 0.5
+diagnostics:
+  check_target_consistency: true
+  check_velocity_delta_consistency: true
+  check_sign_conventions: true
+  check_model_vs_command_baseline: true
+  check_forward_quality_gate: true
+  check_yaw_sign: true
+  check_delta_body_transform: true
+  check_target_bias: true
+  check_residual_baseline_bias: true
+  check_prediction_bias: true
+  check_command_distribution: true
+  check_train_val_test_distribution: true
+backward_readiness:
+  enabled: true
+  require_forward_quality_before_backward: true
+  skip_backward_if_forward_poor: true
+  require_beats_cmd_baseline: true
+  max_final_xy_error_m: 2.0
+  max_heading_error_rad: 0.5
+  report_only: true
+  force_backward_demo: false
+  minimum_requirement:
+    model_must_beat_command_baseline: true
+    max_rollout_position_error_m: 1.0
+    max_rollout_heading_error_rad: 0.5
+    max_final_xy_error_m: 2.0
+    max_final_heading_error_rad: 0.5
+backward_demo:
+  enabled: true
+  method: cem
+  path_csv: bag/processed/planned_path.csv
+  generated_path_type: curve_path
+  horizon_steps: 30
+  num_candidates: 512
+  cem_iterations: 5
+  num_elites: 64
+  cmd_v_min: 0.0
+  cmd_v_max: 2.0
+  cmd_w_min: -0.8
+  cmd_w_max: 0.8
+  cmd_v_rate_limit: 0.2
+  cmd_w_rate_limit: 0.2
+  path_tracking_weight: 10.0
+  heading_weight: 2.0
+  command_effort_weight: 0.05
+  command_smoothness_weight: 0.2
+plotting:
+  enabled: true
+  visualization_dir: null
+  output_dir: null
+  dpi: 140
+  plot_dpi: 140
+  max_points: 5000
+  save_png: true
+  save_csv_debug: true
+visualization:
+  enabled: true
+  output_dir: null
+  plot_every_n_epochs: 10
+  save_every_n_epochs: 10
+  save_epoch_visualizations: true
+  save_first_epoch_visualization: true
+  save_best_epoch_visualization: true
+  save_last_epoch_visualization: true
+  save_full_trajectory_every_n_epochs: 10
+  max_eval_points_for_epoch_plots: 300
+  full_trajectory_max_points: 3000
+  percent_step: 10
+  full_trajectory_percent_step: 10
+  full_trajectory_modes:
+  - cumulative
+  - segment
+  cumulative_trajectory_mode: interval
+  interval_prediction_start: actual_odom
+  interval_include_command_baseline: true
+  interval_zero_start: false
+  annotate_percent_markers: true
+  annotate_start_end: true
+  equal_axis: true
+  zero_segment_start: true
+  dpi: 140
+changelog:
+  enabled: true
+  output_dir: changelog
+  require_changelog_for_code_changes: true
+experiments:
+  run_experiment_sweep: false
+  experiments_to_run:
+  - name: exp_raw_pose_delta
+    model_type: raw_delta_gru
+    target_source_mode: pose_delta
+  - name: exp_velocity_integrated
+    model_type: constrained_velocity_gru
+    target_source_mode: velocity_integrated
+  - name: exp_hybrid_velocity_x_pose_theta
+    model_type: hybrid_gru
+    target_source_mode: hybrid_velocity_x_pose_theta
+model_selection:
+  primary_metric: final_xy_error_model
+  require_beats_cmd_baseline: true
+model_promotion:
+  enabled: true
+  require_beats_cmd_baseline: true
+  max_full_course_model_xy_error: 2.0
+  max_limited_closed_loop_200_error: 5.0
+  max_one_step_test_mse: 0.001
+  require_final_evaluation_complete: true
+  promote_only_after_plotting: true
+  allow_promotion_if_closed_loop_not_ready: false
+  copy_global_best: true
+  require_beats_previous_best: false
+  max_allowed_final_xy_error_m: 2.0
+  max_allowed_heading_error_rad: 0.5
+rollout_safe_model:
+  enabled: true
+  train_separate_model: true
+  feature_columns:
+  - cmd_v
+  - cmd_omega
+  - odom_vx
+  - odom_vy
+  - odom_omega_z
+  - rear_yaw
+  - rear_yaw_rate
+  predicted_state_columns:
+  - v_next
+  - omega_next
+  - vy_body_next
+  - rear_yaw_next
+  - rear_yaw_rate_next
+  derive_deltas_from_velocity: true
+  use_trapezoidal_integration: true
+baseline_models:
+  include_previous_raw_delta_if_available: true
+  previous_checkpoint_path: weights/best.pt
+tests:
+  run_schema_test: true
+  run_dataset_test: true
+  run_small_batch_overfit_test: true
+  run_one_epoch_smoke_test: true
+  run_rollout_test: true
+_runtime:
+  project_root: E:\Mess\Projects\Programming\aiformula\neurokin_mpc
+  run_timestamp: '20260430_004732'
+  run_dir: E:\Mess\Projects\Programming\aiformula\neurokin_mpc\runs\20260430_004732
+  artifact_dir: E:\Mess\Projects\Programming\aiformula\neurokin_mpc\runs\20260430_004732\artifacts
+  visualization_dir: E:\Mess\Projects\Programming\aiformula\neurokin_mpc\runs\20260430_004732\visualization
+  run_visualization_dir: E:\Mess\Projects\Programming\aiformula\neurokin_mpc\runs\20260430_004732\visualization
+  log_dir: E:\Mess\Projects\Programming\aiformula\neurokin_mpc\runs\20260430_004732\logs
+  checkpoint_dir: E:\Mess\Projects\Programming\aiformula\neurokin_mpc\runs\20260430_004732
+  root_debug_dir: E:\Mess\Projects\Programming\aiformula\neurokin_mpc\debug
+  root_visualization_dir: E:\Mess\Projects\Programming\aiformula\neurokin_mpc\runs\20260430_004732\visualization
+  epoch_tag: artifacts

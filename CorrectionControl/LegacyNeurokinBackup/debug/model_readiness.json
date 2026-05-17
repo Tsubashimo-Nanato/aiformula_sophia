@@ -1,0 +1,60 @@
+{
+  "backward_mpc_ready": false,
+  "bag_only_observed_features_present": [
+    "imu_acc_x",
+    "imu_acc_y",
+    "imu_gyro_z",
+    "vn_body_vx",
+    "vn_body_vy"
+  ],
+  "blocking_reasons": [
+    "model uses bag-only observed features and no rollout-safe model was trained"
+  ],
+  "feature_columns": [
+    "cmd_v",
+    "cmd_omega",
+    "odom_vx",
+    "odom_vy",
+    "odom_omega_z",
+    "imu_acc_x",
+    "imu_acc_y",
+    "imu_gyro_z",
+    "vn_body_vx",
+    "vn_body_vy",
+    "rear_yaw",
+    "rear_yaw_rate"
+  ],
+  "feature_mode": "rich_sensor",
+  "full_course_replay_ready": true,
+  "limited_closed_loop_ready": true,
+  "metrics_used": {
+    "full_course_metric_source": "same_segment_test_split_odom_replay",
+    "full_course_model_heading": 0.043289691281150455,
+    "full_course_model_xy": 0.46994653337290615,
+    "limited_closed_loop_200_heading_error": 0.11043933581458987,
+    "limited_closed_loop_200_xy_error": 4.210096907006612,
+    "model_beats_cmd_baseline": true,
+    "one_step_test_mse": 0.0001315402623731643,
+    "teacher_forced_200_heading_error": 0.025449942417253624,
+    "teacher_forced_200_xy_error": 0.18601466186563284
+  },
+  "one_step_predictor_ready": true,
+  "recommendation": "DO_NOT_RUN_BACKWARD_YET_FORWARD_MODEL_POOR_OR_NOT_ROLLOUT_SAFE",
+  "rollout_feature_ready": false,
+  "rollout_safe_feature_columns": [
+    "cmd_omega",
+    "cmd_v",
+    "odom_omega_z",
+    "odom_vx",
+    "odom_vy",
+    "rear_yaw",
+    "rear_yaw_rate"
+  ],
+  "teacher_forced_rollout_ready": true,
+  "thresholds": {
+    "max_full_course_model_xy_error": 2.0,
+    "max_heading_error_rad": 0.5,
+    "max_limited_closed_loop_200_error": 5.0,
+    "max_one_step_test_mse": 0.001
+  }
+}

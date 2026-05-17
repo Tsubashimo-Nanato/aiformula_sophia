@@ -1,0 +1,15 @@
+{
+  "cmd_formula_passed": true,
+  "expected_shape": [
+    2,
+    5
+  ],
+  "missing_feature_error": "'Cannot compute ideal differential-drive baseline; missing required feature: cmd_omega'",
+  "missing_feature_error_clear": true,
+  "passed": true,
+  "shape": [
+    2,
+    5
+  ],
+  "wheel_formula_passed": true
+}

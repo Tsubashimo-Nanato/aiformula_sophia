@@ -1,0 +1,61 @@
+raw_input_dir: "bag/raw_output"
+processed_output_dir: "bag/Processed"
+
+resample_hz: 20
+dt: 0.05
+history_seconds: 1.0
+history_steps: null
+prediction_horizon_steps: 1
+
+interpolation:
+  max_gap_seconds: 0.10
+  gap_tolerance_seconds: 0.005
+  command_method: "ffill"
+  sensor_method: "linear"
+
+features_enabled:
+  cmd_v: true
+  cmd_omega: true
+  odom_vx: true
+  odom_vy: true
+  odom_omega_z: true
+  imu_acc_x: true
+  imu_acc_y: true
+  imu_gyro_z: true
+  vn_body_vx: true
+  vn_body_vy: true
+  rear_yaw: true
+  rear_yaw_rate: true
+  joint_states: false
+  vn_body_angular_z: false
+
+target_columns:
+  - delta_x_body
+  - delta_y_body
+  - delta_theta
+  - v_next
+  - omega_next
+
+splits:
+  train_ratio: 0.70
+  val_ratio: 0.15
+  test_ratio: 0.15
+  method: "chronological"
+
+filtering:
+  remove_rows_with_nan: true
+  max_abs_imu_acc_xy: 20.0
+  max_abs_gyro_z: 10.0
+  max_abs_rear_yaw_rate: 10.0
+  min_required_common_duration_seconds: 10.0
+
+diagnostics:
+  narrow_cmd_v_std_threshold: 0.05
+  strong_correlation_abs_threshold: 0.50
+
+output:
+  write_aligned_timeseries_csv: true
+  write_train_npz: true
+  write_preview_csv: true
+  write_report_md: true
+  write_stats_json: true

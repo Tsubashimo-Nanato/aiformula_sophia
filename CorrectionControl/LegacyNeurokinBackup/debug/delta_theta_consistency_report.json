@@ -1,0 +1,30 @@
+{
+  "comparisons": {
+    "pose_delta_theta_vs_imu_gyro_dt": {
+      "bias": -2.387001546959173e-05,
+      "correlation": 0.8518731974520809,
+      "count": 2154,
+      "intercept": 0.0007195657071515312,
+      "mae": 0.0013000694475238923,
+      "rmse": 0.002076717296053737,
+      "slope": 0.7410653656464038,
+      "std_error": 0.0020765801092397637
+    },
+    "pose_delta_theta_vs_odom_omega_dt": {
+      "bias": -1.6615603223633245e-05,
+      "correlation": 0.8446307340843727,
+      "count": 2223,
+      "intercept": 0.0006976134647092587,
+      "mae": 0.0013767693076244662,
+      "rmse": 0.0021088200456866467,
+      "slope": 0.7484694157931778,
+      "std_error": 0.002108754586674169
+    }
+  },
+  "pose_delta_theta_is_consistent": false,
+  "thresholds": {
+    "max_rmse": 0.002,
+    "min_corr": 0.7
+  },
+  "warning": "Pose-derived delta_theta is not sufficiently consistent with available yaw-rate signals."
+}

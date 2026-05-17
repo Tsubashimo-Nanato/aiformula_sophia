@@ -1,0 +1,62 @@
+{
+  "checks": {
+    "feature_count_match": true,
+    "history_steps_match": true,
+    "no_nan_in_x": true,
+    "no_nan_in_y": true,
+    "target_count_match": true,
+    "x_ndim_is_3": true,
+    "y_ndim_is_2": true
+  },
+  "feature_columns": [
+    "cmd_v",
+    "cmd_omega",
+    "odom_vx",
+    "odom_vy",
+    "odom_omega_z",
+    "imu_acc_x",
+    "imu_acc_y",
+    "imu_gyro_z",
+    "vn_body_vx",
+    "vn_body_vy",
+    "rear_yaw",
+    "rear_yaw_rate"
+  ],
+  "history_steps": 20,
+  "model_type": "constrained_velocity_gru",
+  "nan_rows_before_filtering": 277,
+  "no_nan_in_x": true,
+  "no_nan_in_y": true,
+  "num_features": 12,
+  "num_samples": 1938,
+  "num_targets": 5,
+  "row_count_after_filtering": 1957,
+  "row_count_before_filtering": 2234,
+  "selected_csv_path": "E:\\Mess\\Projects\\Programming\\aiformula\\neurokin_mpc\\bag\\processed\\aligned_timeseries.csv",
+  "target_columns": [
+    "delta_x_body",
+    "delta_y_body",
+    "delta_theta",
+    "v_next",
+    "omega_next"
+  ],
+  "target_source_mode": "velocity_integrated",
+  "test_samples": 292,
+  "timestamp_column": "timestamp",
+  "train_samples": 1356,
+  "val_samples": 290,
+  "warnings": [
+    "Multiple CSV files found in processed directory; selected preferred file aligned_timeseries.csv. Candidates: aligned_timeseries.csv, train_samples_preview.csv",
+    "Dropped 277 rows containing NaN in selected feature/target columns.",
+    "Configured rollout_loss is not applied inside mini-batch training yet; rollout quality is evaluated and reported separately."
+  ],
+  "x_shape": [
+    1938,
+    20,
+    12
+  ],
+  "y_shape": [
+    1938,
+    5
+  ]
+}

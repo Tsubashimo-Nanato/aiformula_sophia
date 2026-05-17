@@ -1,0 +1,15 @@
+{
+  "source_csv": "E:\\Mess\\Projects\\Programming\\aiformula_sophia\\CorrectionControl\\Temp\\processed\\aligned_timeseries.csv",
+  "raw_rows": 2085,
+  "selected_rows": 2085,
+  "selected_columns": [
+    "timestamp",
+    "cmd_v",
+    "cmd_omega",
+    "meas_v",
+    "meas_omega"
+  ],
+  "meas_v_source": "vn_body_vx",
+  "meas_omega_source": "odom_omega_z",
+  "excluded": "full bag directory and unused sensor columns"
+}

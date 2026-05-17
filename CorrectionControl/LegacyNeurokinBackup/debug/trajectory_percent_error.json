@@ -1,0 +1,38 @@
+{
+  "available": true,
+  "cumulative_trajectory_mode": "interval",
+  "files_generated": [
+    "E:\\Mess\\Projects\\Programming\\aiformula\\neurokin_mpc\\runs\\20260429_235357\\visualization\\odom_actual_full_course.png",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\neurokin_mpc\\runs\\20260429_235357\\visualization\\odom_predicted_full_course.png",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\neurokin_mpc\\runs\\20260429_235357\\visualization\\odom_actual_vs_predicted_full_course.png",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\neurokin_mpc\\runs\\20260429_235357\\visualization\\odom_actual_vs_predicted_full_course_percent_markers.png",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\neurokin_mpc\\runs\\20260429_235357\\visualization\\odom_actual_vs_model_vs_cmd_baseline_full_course.png",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\neurokin_mpc\\runs\\20260429_235357\\visualization\\trajectory_xy_error_by_percent.png",
+    "E:\\Mess\\Projects\\Programming\\aiformula\\neurokin_mpc\\runs\\20260429_235357\\visualization\\trajectory_heading_error_by_percent.png"
+  ],
+  "final_command_baseline_heading_error": 3.7344250514614528,
+  "final_command_baseline_xy_error": 11.932853182378217,
+  "final_model_heading_error": 0.42621257977367843,
+  "final_model_xy_error": 35.63527281141826,
+  "first_percent_where_xy_error_exceeds_threshold": 10,
+  "interval_prediction_start": "actual_odom",
+  "interval_zero_start": false,
+  "model_beats_command_baseline_heading": true,
+  "model_beats_command_baseline_xy": false,
+  "percent_markers": [
+    0,
+    10,
+    20,
+    30,
+    40,
+    50,
+    60,
+    70,
+    80,
+    90,
+    100
+  ],
+  "percent_step": 10,
+  "valid_trajectory_points": 1938,
+  "xy_error_threshold_m": 2.0
+}

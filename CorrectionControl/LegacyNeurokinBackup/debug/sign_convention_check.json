@@ -1,0 +1,10 @@
+{
+  "corr_cmd_omega__imu_gyro_z": 0.9059297385454028,
+  "corr_cmd_omega__odom_omega_z": 0.897565450765177,
+  "corr_delta_theta__imu_gyro_z_dt": 0.8518731974520809,
+  "corr_delta_theta__odom_omega_z_dt": 0.8446307340843727,
+  "corr_odom_omega_z__imu_gyro_z": 0.9619722298004304,
+  "corr_pred_delta_theta__actual_delta_theta": 0.98616332643521,
+  "dt_default": 0.05,
+  "possible_yaw_sign_mismatch": false
+}

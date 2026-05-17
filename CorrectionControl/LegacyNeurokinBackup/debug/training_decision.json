@@ -1,0 +1,39 @@
+{
+  "allow_resume_only_if_same_model_signature": true,
+  "force_retrain_from_scratch": true,
+  "model_signature": {
+    "derive_deltas_from_velocity": true,
+    "feature_columns": [
+      "cmd_v",
+      "cmd_omega",
+      "odom_vx",
+      "odom_vy",
+      "odom_omega_z",
+      "imu_acc_x",
+      "imu_acc_y",
+      "imu_gyro_z",
+      "vn_body_vx",
+      "vn_body_vy",
+      "rear_yaw",
+      "rear_yaw_rate"
+    ],
+    "hidden_size": 64,
+    "model.type": "constrained_velocity_gru",
+    "num_layers": 2,
+    "output_mode": "velocity_rate",
+    "target_columns": [
+      "delta_x_body",
+      "delta_y_body",
+      "delta_theta",
+      "v_next",
+      "omega_next"
+    ],
+    "target_source_mode": "auto",
+    "target_source_mode_selected": "velocity_integrated",
+    "use_trapezoidal_integration": true
+  },
+  "requested_resume_from_checkpoint": null,
+  "resume_skipped_reason": "Because the model formulation changed from raw independent delta prediction to constrained velocity-rate prediction, training is restarted from scratch.",
+  "resumed": false,
+  "weights_dir": "E:\\Mess\\Projects\\Programming\\aiformula\\neurokin_mpc\\runs\\20260430_004732"
+}

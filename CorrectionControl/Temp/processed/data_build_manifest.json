@@ -1,0 +1,23 @@
+{
+  "source": "ros2unbag CSV exports",
+  "export_dir": "E:\\Mess\\Projects\\Programming\\aiformula_sophia\\CorrectionControl\\Temp\\ros2unbag_exports\\csv",
+  "output_csv": "E:\\Mess\\Projects\\Programming\\aiformula_sophia\\CorrectionControl\\Temp\\processed\\aligned_timeseries.csv",
+  "dt": 0.05,
+  "asof_tolerance_sec": 0.075,
+  "rows": 2085,
+  "columns": [
+    "timestamp",
+    "cmd_v",
+    "cmd_omega",
+    "vn_body_vx",
+    "odom_omega_z"
+  ],
+  "feature_order_for_model_history": [
+    "cmd_v",
+    "cmd_omega",
+    "meas_v",
+    "meas_omega"
+  ],
+  "meas_v_source": "vn_body_vx",
+  "meas_omega_source": "odom_omega_z"
+}

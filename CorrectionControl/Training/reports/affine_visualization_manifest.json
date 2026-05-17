@@ -1,0 +1,9 @@
+{
+  "created_figures": [
+    "E:\\Mess\\Projects\\Programming\\aiformula_sophia\\CorrectionControl\\Training\\figures\\affine_correction_flow.png",
+    "E:\\Mess\\Projects\\Programming\\aiformula_sophia\\CorrectionControl\\Training\\figures\\affine_inverse_example.png",
+    "E:\\Mess\\Projects\\Programming\\aiformula_sophia\\CorrectionControl\\Training\\figures\\affine_parameter_distribution.png",
+    "E:\\Mess\\Projects\\Programming\\aiformula_sophia\\CorrectionControl\\Training\\figures\\history_conditioned_affine_lines.png"
+  ],
+  "note": "Generated from the existing trained checkpoint only; no retraining was run."
+}

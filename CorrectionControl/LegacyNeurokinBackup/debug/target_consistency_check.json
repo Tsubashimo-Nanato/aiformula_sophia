@@ -1,0 +1,18 @@
+{
+  "available": true,
+  "corr_delta_theta_check": 0.996746922184059,
+  "corr_delta_x_body_check": 0.9790161803046673,
+  "corr_delta_y_body_check": 0.9802806260020702,
+  "max_abs_diff_delta_theta": 0.014499883578113618,
+  "max_abs_diff_delta_x_body": 0.451174963148097,
+  "max_abs_diff_delta_y_body": 0.0036657259188769015,
+  "mean_abs_diff_delta_theta": 8.224174960814763e-06,
+  "mean_abs_diff_delta_x_body": 0.0003378997023668338,
+  "mean_abs_diff_delta_y_body": 2.2215524684831205e-06,
+  "possible_target_construction_issue": true,
+  "rmse_diff_delta_theta": 0.0003178541490767208,
+  "rmse_diff_delta_x_body": 0.011489867245621394,
+  "rmse_diff_delta_y_body": 8.230445153352597e-05,
+  "rows_checked": 2222,
+  "warning": "Target columns may have incorrect frame transform, sign convention, or timestamp shift."
+}
