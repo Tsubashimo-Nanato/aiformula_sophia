@@ -5,6 +5,7 @@ import csv
 import json
 import math
 import time
+import traceback
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -12,7 +13,7 @@ from typing import Any
 
 import rclpy
 from can_msgs.msg import Frame
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
@@ -131,7 +132,7 @@ class CorrectionControllerTrainer(Node):
         self.declare_parameter("final_stop_burst_sec", 4.0)
         self.declare_parameter("output_root", "~/Desktop")
         self.declare_parameter("trajectory_json", "")
-        self.declare_parameter("state_service_wait_sec", 5.0)
+        self.declare_parameter("state_service_wait_sec", 20.0)
         self.declare_parameter("require_state_service", True)
 
         self.state_sequence = self.load_state_sequence(str(self.get_parameter("state_sequence").value))
@@ -152,7 +153,12 @@ class CorrectionControllerTrainer(Node):
 
         self.trajectory = self.load_trajectory(str(self.get_parameter("trajectory_json").value or ""))
         self.cmd_pub = self.create_publisher(Twist, self.topic, 10)
-        self.velocity_sub = self.create_subscription(Odometry, self.velocity_body_topic, self.velocity_body_callback, 50)
+        self.velocity_sub = self.create_subscription(
+            TwistWithCovarianceStamped,
+            self.velocity_body_topic,
+            self.velocity_body_callback,
+            50,
+        )
         self.odom_sub = self.create_subscription(Odometry, self.odom_topic, self.odom_callback, 50)
         self.can_sub = self.create_subscription(Frame, self.can_topic, self.can_callback, 50)
         self.debug_sub = self.create_subscription(Float64MultiArray, self.debug_topic, self.debug_callback, 50)
@@ -208,15 +214,15 @@ class CorrectionControllerTrainer(Node):
     @staticmethod
     def default_test_trajectory() -> list[TrajectorySegment]:
         sine_speed_mps = 2.0
-        sine_wavelength_m = 3.0
+        sine_wavelength_m = 5.0
         sine_period_sec = sine_wavelength_m / sine_speed_mps
         return [
             TrajectorySegment(name="forward_2mps", kind="hold", duration_sec=2.0, v=2.0, omega=0.0),
             TrajectorySegment(name="stop_after_2mps", kind="hold", duration_sec=2.0, v=0.0, omega=0.0),
-            TrajectorySegment(name="forward_4mps", kind="hold", duration_sec=2.0, v=4.0, omega=0.0),
+            TrajectorySegment(name="forward_4mps", kind="hold", duration_sec=1.0, v=4.0, omega=0.0),
             TrajectorySegment(name="stop_after_4mps", kind="hold", duration_sec=2.0, v=0.0, omega=0.0),
             TrajectorySegment(
-                name="sine_low_wl3m",
+                name="sine_low_wl5m",
                 kind="sine",
                 duration_sec=sine_period_sec,
                 offset_v=sine_speed_mps,
@@ -225,11 +231,11 @@ class CorrectionControllerTrainer(Node):
             ),
             TrajectorySegment(name="stop_after_sine_low", kind="hold", duration_sec=2.0, v=0.0, omega=0.0),
             TrajectorySegment(
-                name="sine_high_wl3m",
+                name="sine_high_wl5m",
                 kind="sine",
                 duration_sec=sine_period_sec,
                 offset_v=sine_speed_mps,
-                amplitude_omega=0.70,
+                amplitude_omega=0.95,
                 period_sec=sine_period_sec,
             ),
         ]
@@ -277,7 +283,7 @@ class CorrectionControllerTrainer(Node):
 
     def configure_controller_state(self, state: int) -> None:
         service_name = self.parameter_service_name(self.motor_controller_node)
-        if not self.state_client.wait_for_service(timeout_sec=self.state_service_wait_sec):
+        if not self.wait_for_state_service(service_name):
             message = f"Motor controller parameter service unavailable: {service_name}"
             if self.require_state_service:
                 raise RuntimeError(message)
@@ -297,14 +303,29 @@ class CorrectionControllerTrainer(Node):
             raise RuntimeError(f"Failed to set controller_state={state}: {reason}")
         self.get_logger().info(f"Set motor_controller controller_state={state}.")
 
+    def wait_for_state_service(self, service_name: str) -> bool:
+        deadline = time.monotonic() + self.state_service_wait_sec
+        while rclpy.ok() and time.monotonic() < deadline:
+            if self.state_client.service_is_ready():
+                return True
+            self.state_client.wait_for_service(timeout_sec=0.25)
+            rclpy.spin_once(self, timeout_sec=0.0)
+        if self.state_client.service_is_ready():
+            return True
+        self.get_logger().error(
+            f"Timed out after {self.state_service_wait_sec:.1f}s waiting for {service_name}. "
+            f"Visible nodes: {self.get_node_names_and_namespaces()}"
+        )
+        return False
+
     def begin_state_run(self, state: int) -> None:
+        self.configure_controller_state(state)
         self.current_state = state
         self.configure_state_output_paths(state)
-        self.configure_controller_state(state)
         self.reset_samples()
         self.state_start_sec = self.now_sec()
 
-    def velocity_body_callback(self, msg: Odometry) -> None:
+    def velocity_body_callback(self, msg: TwistWithCovarianceStamped) -> None:
         self.velocity_samples.append(
             {
                 "timestamp": self.rel_time(),
@@ -639,6 +660,10 @@ def main(args=None) -> None:
         node.run_sequence()
     except KeyboardInterrupt:
         node.get_logger().warning("Interrupted; sending full stop before shutdown.")
+    except Exception as exc:
+        node.get_logger().error(f"Trainer failed: {exc}")
+        node.get_logger().error(traceback.format_exc())
+        raise
     finally:
         if not node.shutdown_stop_sent:
             node.publish_stop_burst(

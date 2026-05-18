@@ -10,7 +10,7 @@ Controller states:
 
 - `s0`: ideal differential-drive conversion only.
 - `s1`: copied BKUP controller tuning, with correction model loaded but not applied.
-- `s2`: CorrectionControl feedforward correction applied.
+- `s2`: CorrectionControl feedforward correction applied before ideal wheel/RPM conversion.
 
 Outputs are written to the robot desktop:
 
@@ -42,11 +42,11 @@ The default test trajectory is:
 ```text
 2.0 m/s for 2 s
 stop for 2 s
-4.0 m/s for 2 s
+4.0 m/s for 1 s
 stop for 2 s
-one 3 m wavelength sine at 2.0 m/s, omega amplitude 0.35 rad/s
+one complete 5 m wavelength sine at 2.0 m/s, omega amplitude 0.35 rad/s
 stop for 2 s
-one 3 m wavelength sine at 2.0 m/s, omega amplitude 0.70 rad/s
+one complete 5 m wavelength sine at 2.0 m/s, omega amplitude 0.95 rad/s
 state stop for 4 s
 ```
 
@@ -63,5 +63,6 @@ Parameters:
 - `inter_state_stop_sec`: zero-command stop after each state, default `4.0`.
 - `final_stop_burst_sec`: emergency shutdown stop if interrupted, default `4.0`.
 - `output_root`: default `~/Desktop`.
+- `state_service_wait_sec`: wait for `/aiformula_control/motor_controller/set_parameters`, default `20.0`.
 
 The node always publishes zero `cmd_vel` before shutdown, including on interruption.

@@ -9,7 +9,7 @@ Controller states:
 
 - `controller_state=0`: ideal diff-drive conversion, no empirical tuning and no correction applied.
 - `controller_state=1`: copied BKUP tuning, no correction applied.
-- `controller_state=2`: CorrectionControl feedforward correction applied.
+- `controller_state=2`: CorrectionControl feedforward correction applied before ideal wheel/RPM conversion.
 
 On the standard PS4/DualShock4 Joy mapping used by the launchers:
 
@@ -30,7 +30,7 @@ base cmd_vel + recent response history
 The model subscribes to:
 
 - `sub_speed_command`: `geometry_msgs/msg/Twist`
-- `/aiformula_sensing/vectornav/velocity_body`: `nav_msgs/msg/Odometry`, using `twist.twist.linear.x` as measured forward velocity
+- `/aiformula_sensing/vectornav/velocity_body`: `geometry_msgs/msg/TwistWithCovarianceStamped`, using `twist.twist.linear.x` as measured forward velocity
 - `/aiformula_sensing/gyro_odometry_publisher/odom`: `nav_msgs/msg/Odometry`, using `twist.twist.angular.z` as measured yaw rate
 - `/aiformula_control/joy_node/joy`: `sensor_msgs/msg/Joy`, using button rising edges for state switching
 

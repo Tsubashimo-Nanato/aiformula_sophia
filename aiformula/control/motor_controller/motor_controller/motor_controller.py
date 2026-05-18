@@ -13,7 +13,7 @@ import rclpy
 import torch
 from ament_index_python.packages import get_package_share_directory
 from can_msgs.msg import Frame
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, TwistWithCovarianceStamped
 from nav_msgs.msg import Odometry
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
@@ -175,7 +175,12 @@ class MotorController(Node):
 
         buffer_size = 10
         self.twist_sub = self.create_subscription(Twist, "sub_speed_command", self.twist_callback, buffer_size)
-        self.velocity_sub = self.create_subscription(Odometry, self.velocity_body_topic, self.velocity_body_callback, buffer_size)
+        self.velocity_sub = self.create_subscription(
+            TwistWithCovarianceStamped,
+            self.velocity_body_topic,
+            self.velocity_body_callback,
+            buffer_size,
+        )
         self.odom_sub = self.create_subscription(Odometry, self.odom_topic, self.odom_callback, buffer_size)
         self.joy_sub = self.create_subscription(Joy, self.joy_topic, self.joy_callback, buffer_size)
         self.can_pub = self.create_publisher(Frame, "pub_can", buffer_size)
@@ -193,7 +198,7 @@ class MotorController(Node):
         self.log_info("Loaded selectable motor controller.")
         self.log_info("State 0: ideal diff-drive, no empirical tuning.")
         self.log_info("State 1: copied BKUP controller tuning, no correction applied.")
-        self.log_info("State 2: CorrectionControl feedforward correction applied.")
+        self.log_info("State 2: CorrectionControl feedforward correction applied before ideal wheel/RPM conversion.")
         self.log_info(f"Initial controller_state={self.controller_state}.")
         self.log_info(
             "PS4 state buttons: triangle->0, circle->1, cross/X->2 "
@@ -301,7 +306,7 @@ class MotorController(Node):
             if module is not None:
                 sys.modules.setdefault(f"numpy._core.{module_name}", module)
 
-    def velocity_body_callback(self, msg: Odometry) -> None:
+    def velocity_body_callback(self, msg: TwistWithCovarianceStamped) -> None:
         self.latest_meas_v = float(msg.twist.twist.linear.x)
 
     def odom_callback(self, msg: Odometry) -> None:
@@ -480,11 +485,7 @@ class MotorController(Node):
         return right_wheel * scale * self.gear_ratio, left_wheel * scale * self.gear_ratio
 
     def corrected_cmd_to_can_rpms(self, linear_velocity: float, angular_velocity: float) -> tuple[float, float]:
-        right_wheel, left_wheel = self.cmd_to_wheel_rad_per_sec(linear_velocity, angular_velocity)
-        right_cmd = self.apply_motor_gain_offset(right_wheel, gain=0.844, offset=2.81)
-        left_cmd = self.apply_motor_gain_offset(left_wheel, gain=0.834, offset=2.76)
-        scale = 60.0 / (2.0 * math.pi)
-        return right_cmd * scale * self.gear_ratio, left_cmd * scale * self.gear_ratio
+        return self.ideal_cmd_to_can_rpms(linear_velocity, angular_velocity)
 
     def bkup_cmd_to_can_rpms(self, linear_velocity: float, angular_velocity: float) -> tuple[float, float]:
         omega_cmd = self.bkup_inverse_sigmoid_omega(angular_velocity)
