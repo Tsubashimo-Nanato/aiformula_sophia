@@ -11,6 +11,12 @@ Controller states:
 - `controller_state=1`: copied BKUP tuning, no correction applied.
 - `controller_state=2`: CorrectionControl feedforward correction applied.
 
+On the standard PS4/DualShock4 Joy mapping used by the launchers:
+
+- Triangle selects state `0`.
+- Circle selects state `1`.
+- Cross/X selects state `2`.
+
 Runtime flow:
 
 ```text
@@ -26,6 +32,7 @@ The model subscribes to:
 - `sub_speed_command`: `geometry_msgs/msg/Twist`
 - `/aiformula_sensing/vectornav/velocity_body`: `nav_msgs/msg/Odometry`, using `twist.twist.linear.x` as measured forward velocity
 - `/aiformula_sensing/gyro_odometry_publisher/odom`: `nav_msgs/msg/Odometry`, using `twist.twist.angular.z` as measured yaw rate
+- `/aiformula_control/joy_node/joy`: `sensor_msgs/msg/Joy`, using button rising edges for state switching
 
 Outgoing CAN frames keep the same ID and 8-byte payload layout as the backed-up differential-drive controller:
 

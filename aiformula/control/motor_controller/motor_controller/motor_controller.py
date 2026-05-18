@@ -17,6 +17,8 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
+from rclpy.parameter import Parameter as RclpyParameter
+from sensor_msgs.msg import Joy
 from std_msgs.msg import Float64MultiArray
 from torch import nn
 
@@ -107,6 +109,10 @@ class MotorController(Node):
         self.declare_parameter("model_path", "")
         self.declare_parameter("velocity_body_topic", "/aiformula_sensing/vectornav/velocity_body")
         self.declare_parameter("odom_topic", "/aiformula_sensing/gyro_odometry_publisher/odom")
+        self.declare_parameter("joy_topic", "/aiformula_control/joy_node/joy")
+        self.declare_parameter("state0_button_triangle", 2)
+        self.declare_parameter("state1_button_circle", 1)
+        self.declare_parameter("state2_button_cross", 0)
         self.declare_parameter("debug_topic", "/aiformula_control/motor_controller/correction_debug")
         self.declare_parameter("history_sample_period_sec", 0.05)
         self.declare_parameter("history_span_tolerance_sec", 0.30)
@@ -123,6 +129,10 @@ class MotorController(Node):
         self.gear_ratio = float(self.get_parameter("wheel.gear_ratio").value)
         self.velocity_body_topic = str(self.get_parameter("velocity_body_topic").value)
         self.odom_topic = str(self.get_parameter("odom_topic").value)
+        self.joy_topic = str(self.get_parameter("joy_topic").value)
+        self.state0_button_triangle = int(self.get_parameter("state0_button_triangle").value)
+        self.state1_button_circle = int(self.get_parameter("state1_button_circle").value)
+        self.state2_button_cross = int(self.get_parameter("state2_button_cross").value)
         self.debug_topic = str(self.get_parameter("debug_topic").value)
         self.history_sample_period_sec = float(self.get_parameter("history_sample_period_sec").value)
         self.history_span_tolerance_sec = float(self.get_parameter("history_span_tolerance_sec").value)
@@ -161,11 +171,13 @@ class MotorController(Node):
         self.latest_meas_omega: float | None = None
         self.last_sent_v: float | None = None
         self.last_sent_omega: float | None = None
+        self.previous_joy_buttons: list[int] = []
 
         buffer_size = 10
         self.twist_sub = self.create_subscription(Twist, "sub_speed_command", self.twist_callback, buffer_size)
         self.velocity_sub = self.create_subscription(Odometry, self.velocity_body_topic, self.velocity_body_callback, buffer_size)
         self.odom_sub = self.create_subscription(Odometry, self.odom_topic, self.odom_callback, buffer_size)
+        self.joy_sub = self.create_subscription(Joy, self.joy_topic, self.joy_callback, buffer_size)
         self.can_pub = self.create_publisher(Frame, "pub_can", buffer_size)
         self.debug_pub = self.create_publisher(Float64MultiArray, self.debug_topic, buffer_size)
         self.publish_timer = self.create_timer(publish_timer_loop_duration, self.publish_canframe_callback)
@@ -183,6 +195,10 @@ class MotorController(Node):
         self.log_info("State 1: copied BKUP controller tuning, no correction applied.")
         self.log_info("State 2: CorrectionControl feedforward correction applied.")
         self.log_info(f"Initial controller_state={self.controller_state}.")
+        self.log_info(
+            "PS4 state buttons: triangle->0, circle->1, cross/X->2 "
+            f"on Joy topic {self.joy_topic}."
+        )
         self.log_info(f"Correction debug topic: {self.debug_topic}")
 
     def destroy_node(self):
@@ -290,6 +306,36 @@ class MotorController(Node):
 
     def odom_callback(self, msg: Odometry) -> None:
         self.latest_meas_omega = float(msg.twist.twist.angular.z)
+
+    def joy_callback(self, msg: Joy) -> None:
+        buttons = [int(value) for value in msg.buttons]
+        try:
+            if self.button_rising_edge(buttons, self.state0_button_triangle):
+                self.set_controller_state_from_joy(self.STATE_IDEAL, "triangle")
+            elif self.button_rising_edge(buttons, self.state1_button_circle):
+                self.set_controller_state_from_joy(self.STATE_BKUP, "circle")
+            elif self.button_rising_edge(buttons, self.state2_button_cross):
+                self.set_controller_state_from_joy(self.STATE_CORRECTED, "cross/X")
+        finally:
+            self.previous_joy_buttons = buttons
+
+    def button_rising_edge(self, buttons: list[int], index: int) -> bool:
+        if index < 0 or index >= len(buttons):
+            return False
+        previous = self.previous_joy_buttons[index] if index < len(self.previous_joy_buttons) else 0
+        return bool(buttons[index]) and not bool(previous)
+
+    def set_controller_state_from_joy(self, state: int, button_name: str) -> None:
+        state = self.coerce_controller_state(state)
+        if state == self.controller_state:
+            self.get_logger().info(f"Joy {button_name} pressed; controller_state already {state}.")
+            return
+        results = self.set_parameters([RclpyParameter("controller_state", RclpyParameter.Type.INTEGER, state)])
+        if results and results[0].successful:
+            self.get_logger().warning(f"Joy {button_name} selected controller_state={state}.")
+        else:
+            reason = results[0].reason if results else "no result returned"
+            self.get_logger().error(f"Failed to switch controller_state from Joy {button_name}: {reason}")
 
     def twist_callback(self, msg: Twist) -> None:
         base_v = float(msg.linear.x)

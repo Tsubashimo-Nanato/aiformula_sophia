@@ -8,6 +8,10 @@
     model_path: ""
     velocity_body_topic: "/aiformula_sensing/vectornav/velocity_body"
     odom_topic: "/aiformula_sensing/gyro_odometry_publisher/odom"
+    joy_topic: "/aiformula_control/joy_node/joy"
+    state0_button_triangle: 2
+    state1_button_circle: 1
+    state2_button_cross: 0
     debug_topic: "/aiformula_control/motor_controller/correction_debug"
 
     history_sample_period_sec: 0.05
