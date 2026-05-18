@@ -118,7 +118,7 @@ class TrajectorySegment:
 class CorrectionControllerTrainer(Node):
     def __init__(self) -> None:
         super().__init__("correction_controller_trainer")
-        self.declare_parameter("state_sequence", "0,1,2")
+        self.declare_parameter("state_sequence", "1")
         self.declare_parameter("topic", CMD_TOPIC)
         self.declare_parameter("velocity_body_topic", VELOCITY_BODY_TOPIC)
         self.declare_parameter("odom_topic", ODOM_TOPIC)
@@ -132,6 +132,7 @@ class CorrectionControllerTrainer(Node):
         self.declare_parameter("final_stop_burst_sec", 4.0)
         self.declare_parameter("output_root", "~/Desktop")
         self.declare_parameter("trajectory_json", "")
+        self.declare_parameter("autosave_period_sec", 2.0)
         self.declare_parameter("state_service_wait_sec", 20.0)
         self.declare_parameter("require_state_service", True)
 
@@ -148,6 +149,7 @@ class CorrectionControllerTrainer(Node):
         self.inter_state_stop_sec = max(0.5, float(self.get_parameter("inter_state_stop_sec").value))
         self.final_stop_burst_sec = max(0.5, float(self.get_parameter("final_stop_burst_sec").value))
         self.output_root = Path(str(self.get_parameter("output_root").value or "~/Desktop")).expanduser()
+        self.autosave_period_sec = max(0.5, float(self.get_parameter("autosave_period_sec").value))
         self.state_service_wait_sec = max(0.0, float(self.get_parameter("state_service_wait_sec").value))
         self.require_state_service = bool(self.get_parameter("require_state_service").value)
 
@@ -172,6 +174,7 @@ class CorrectionControllerTrainer(Node):
         self.current_state: int | None = None
         self.state_start_sec: float | None = None
         self.shutdown_stop_sent = False
+        self.last_autosave_monotonic = 0.0
 
         self.reset_samples()
 
@@ -213,30 +216,53 @@ class CorrectionControllerTrainer(Node):
 
     @staticmethod
     def default_test_trajectory() -> list[TrajectorySegment]:
-        sine_speed_mps = 2.0
-        sine_wavelength_m = 5.0
-        sine_period_sec = sine_wavelength_m / sine_speed_mps
+        def stop(name: str, duration: float = 1.5) -> TrajectorySegment:
+            return TrajectorySegment(name=name, kind="hold", duration_sec=duration, v=0.0, omega=0.0)
+
+        def sine_wave(name: str, speed: float, wavelength: float, omega_amp: float, cycles: float) -> TrajectorySegment:
+            period = wavelength / speed
+            return TrajectorySegment(
+                name=name,
+                kind="sine",
+                duration_sec=period * cycles,
+                offset_v=speed,
+                amplitude_omega=omega_amp,
+                period_sec=period,
+            )
+
         return [
-            TrajectorySegment(name="forward_2mps", kind="hold", duration_sec=2.0, v=2.0, omega=0.0),
-            TrajectorySegment(name="stop_after_2mps", kind="hold", duration_sec=2.0, v=0.0, omega=0.0),
-            TrajectorySegment(name="forward_4mps", kind="hold", duration_sec=1.0, v=4.0, omega=0.0),
-            TrajectorySegment(name="stop_after_4mps", kind="hold", duration_sec=2.0, v=0.0, omega=0.0),
+            stop("settle_stop", 2.0),
+            TrajectorySegment(name="forward_1p0mps", kind="hold", duration_sec=4.0, v=1.0, omega=0.0),
+            stop("stop_after_forward_1p0"),
+            TrajectorySegment(name="forward_2p0mps", kind="hold", duration_sec=4.0, v=2.0, omega=0.0),
+            stop("stop_after_forward_2p0"),
+            TrajectorySegment(name="forward_3p0mps", kind="hold", duration_sec=3.0, v=3.0, omega=0.0),
+            stop("stop_after_forward_3p0"),
+            TrajectorySegment(name="ramp_1p0_to_3p0", kind="ramp", duration_sec=6.0, start_v=1.0, end_v=3.0),
+            TrajectorySegment(name="ramp_3p0_to_1p0", kind="ramp", duration_sec=6.0, start_v=3.0, end_v=1.0),
+            stop("stop_after_speed_ramps"),
+            TrajectorySegment(name="turn_left_v0p8_w0p35", kind="hold", duration_sec=10.0, v=0.8, omega=0.35),
+            stop("stop_after_turn_left"),
+            TrajectorySegment(name="turn_right_v0p8_w-0p35", kind="hold", duration_sec=10.0, v=0.8, omega=-0.35),
+            stop("stop_after_turn_right"),
+            TrajectorySegment(name="circle_left_v1p0_w0p35", kind="hold", duration_sec=18.0, v=1.0, omega=0.35),
+            stop("stop_after_circle_left", 2.0),
+            TrajectorySegment(name="circle_right_v1p0_w-0p35", kind="hold", duration_sec=18.0, v=1.0, omega=-0.35),
+            stop("stop_after_circle_right", 2.0),
+            sine_wave(name="wave_v1p5_wl8m_amp0p25", speed=1.5, wavelength=8.0, omega_amp=0.25, cycles=2.0),
+            stop("stop_after_wave_v1p5"),
+            sine_wave(name="wave_v2p0_wl8m_amp0p32", speed=2.0, wavelength=8.0, omega_amp=0.32, cycles=2.0),
+            stop("stop_after_wave_v2p0"),
+            sine_wave(name="wave_v2p5_wl10m_amp0p30", speed=2.5, wavelength=10.0, omega_amp=0.30, cycles=2.0),
+            stop("stop_after_wave_v2p5"),
             TrajectorySegment(
-                name="sine_low_wl5m",
+                name="wave_variable_speed_1p0_to_3p0",
                 kind="sine",
-                duration_sec=sine_period_sec,
-                offset_v=sine_speed_mps,
-                amplitude_omega=0.35,
-                period_sec=sine_period_sec,
-            ),
-            TrajectorySegment(name="stop_after_sine_low", kind="hold", duration_sec=2.0, v=0.0, omega=0.0),
-            TrajectorySegment(
-                name="sine_high_wl5m",
-                kind="sine",
-                duration_sec=sine_period_sec,
-                offset_v=sine_speed_mps,
-                amplitude_omega=0.95,
-                period_sec=sine_period_sec,
+                duration_sec=12.0,
+                offset_v=2.0,
+                amplitude_v=1.0,
+                amplitude_omega=0.22,
+                period_sec=6.0,
             ),
         ]
 
@@ -324,6 +350,7 @@ class CorrectionControllerTrainer(Node):
         self.configure_state_output_paths(state)
         self.reset_samples()
         self.state_start_sec = self.now_sec()
+        self.last_autosave_monotonic = 0.0
 
     def velocity_body_callback(self, msg: TwistWithCovarianceStamped) -> None:
         self.velocity_samples.append(
@@ -400,8 +427,10 @@ class CorrectionControllerTrainer(Node):
             v, omega = segment.sample(elapsed)
             self.publish_command_sample(v, omega, segment.name)
             rclpy.spin_once(self, timeout_sec=0.0)
+            self.maybe_autosave()
             next_publish += period
             time.sleep(max(0.0, min(next_publish - time.monotonic(), period)))
+        self.maybe_autosave(force=True)
 
     def publish_stop_burst(
         self,
@@ -418,10 +447,12 @@ class CorrectionControllerTrainer(Node):
         while rclpy.ok() and time.monotonic() < deadline:
             self.publish_command_sample(0.0, 0.0, segment_name)
             rclpy.spin_once(self, timeout_sec=0.0)
+            self.maybe_autosave()
             next_publish += period
             time.sleep(max(0.0, min(next_publish - time.monotonic(), period)))
         if mark_shutdown:
             self.shutdown_stop_sent = True
+        self.maybe_autosave(force=True)
 
     def run_sequence(self) -> None:
         self.configure_run_output_dir()
@@ -577,6 +608,18 @@ class CorrectionControllerTrainer(Node):
         log_fields = self.log_fieldnames(log_rows)
         self.write_csv(self.log_csv_path, log_fields, log_rows)
 
+    def maybe_autosave(self, *, force: bool = False) -> None:
+        if self.train_csv_path is None or self.log_csv_path is None:
+            return
+        now = time.monotonic()
+        if not force and now - self.last_autosave_monotonic < self.autosave_period_sec:
+            return
+        try:
+            self.write_outputs()
+            self.last_autosave_monotonic = now
+        except Exception as exc:
+            self.get_logger().warning(f"Autosave failed; will retry later: {exc}")
+
     @staticmethod
     def log_fieldnames(rows: list[dict[str, Any]]) -> list[str]:
         preferred = [
@@ -640,17 +683,29 @@ class CorrectionControllerTrainer(Node):
             "valid_can",
             "valid_debug",
         ]
+        if not rows:
+            return preferred
         extras = sorted({key for row in rows for key in row.keys()} - set(preferred))
         return [key for key in preferred if any(key in row for row in rows)] + extras
 
     @staticmethod
     def write_csv(path: Path, fieldnames: list[str], rows: list[dict[str, Any]]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("w", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(handle, fieldnames=fieldnames, extrasaction="ignore")
-            writer.writeheader()
-            for row in rows:
-                writer.writerow(row)
+        tmp_path = path.with_name(path.name + ".tmp")
+        try:
+            with tmp_path.open("w", newline="", encoding="utf-8") as handle:
+                writer = csv.DictWriter(handle, fieldnames=fieldnames, extrasaction="ignore")
+                writer.writeheader()
+                for row in rows:
+                    writer.writerow(row)
+                handle.flush()
+            tmp_path.replace(path)
+        finally:
+            if tmp_path.exists():
+                try:
+                    tmp_path.unlink()
+                except OSError:
+                    pass
 
 
 def main(args=None) -> None:

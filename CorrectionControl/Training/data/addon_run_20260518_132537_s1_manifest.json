@@ -1,0 +1,11 @@
+{
+  "mode": "addon_fine_tune",
+  "raw_run_dir": "data/run_20260518_132537",
+  "states_used_for_training": [
+    "s1"
+  ],
+  "selected_training_csv": "data/addon_run_20260518_132537_s1_selected_training_data.csv",
+  "metrics": "reports/addon_run_20260518_132537_s1_metrics.json",
+  "history": "reports/addon_run_20260518_132537_s1_training_history.csv",
+  "note": "The raw run folders are preserved under Training/data. Add-on training preserves checkpoint normalization stats."
+}

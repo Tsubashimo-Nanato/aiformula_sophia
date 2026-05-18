@@ -1,0 +1,70 @@
+{
+  "mode": "addon_fine_tune",
+  "base_checkpoint": "models/correction_control.pt",
+  "run_dir": "data/run_20260518_132537",
+  "states": [
+    "s1"
+  ],
+  "selected_rows": 358,
+  "samples": {
+    "total": 337,
+    "train": 235,
+    "val": 51,
+    "test": 51
+  },
+  "initial_val_loss": 1.6061984300613403,
+  "best_epoch": 119,
+  "best_val_loss": 0.36780494451522827,
+  "fine_tune_config": {
+    "states": [
+      "s1"
+    ],
+    "epochs": 120,
+    "learning_rate": 0.0002,
+    "early_stop_patience": 25,
+    "batch_size": 64
+  },
+  "training_config": {
+    "history_steps": 20,
+    "horizon_steps": 1,
+    "train_ratio": 0.7,
+    "val_ratio": 0.15,
+    "batch_size": 128,
+    "epochs": 500,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "hidden_size": 32,
+    "gru_layers": 1,
+    "dropout": 0.0,
+    "lambda_gain": 0.001,
+    "lambda_bias": 0.001,
+    "omega_loss_weight": 8.0,
+    "early_stop_patience": 80,
+    "seed": 7,
+    "max_gap_seconds": 0.075,
+    "gain_span": 0.75,
+    "max_bias_v": 0.75,
+    "max_bias_omega": 0.35,
+    "correction_clip_v": 3.0,
+    "correction_clip_omega": 1.0
+  },
+  "train": {
+    "rmse_v": 0.43603208661079407,
+    "rmse_omega": 0.040085650980472565,
+    "baseline_rmse_v": 1.309838891029358,
+    "baseline_rmse_omega": 0.2113114446401596
+  },
+  "val": {
+    "rmse_v": 0.4810866713523865,
+    "rmse_omega": 0.25058621168136597,
+    "baseline_rmse_v": 1.5658612251281738,
+    "baseline_rmse_omega": 0.5070928335189819
+  },
+  "test": {
+    "rmse_v": 0.8174472451210022,
+    "rmse_omega": 0.04932254180312157,
+    "baseline_rmse_v": 1.4233794212341309,
+    "baseline_rmse_omega": 0.046642202883958817
+  },
+  "device": "cpu"
+}

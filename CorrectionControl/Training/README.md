@@ -65,6 +65,28 @@ reports/report.md
 figures/
 ```
 
+## Add-On Fine Tune
+
+Raw trainer runs can be stored under:
+
+```text
+data/run_YYYYMMDD_HHMMSS/
+```
+
+Fine-tune the existing checkpoint from a run with:
+
+```powershell
+python train_correction_control.py --addon-run-dir data/run_20260518_132537 --addon-states s1
+```
+
+This starts from `models/correction_control.pt`, keeps the checkpoint normalization stats, writes add-on selected data and metrics under `data/` and `reports/`, then refreshes `models/correction_control.pt`.
+
+The same add-on path is also available directly through:
+
+```powershell
+python fine_tune_correction_control.py --run-dir data/run_20260518_132537 --states s1
+```
+
 ## Visualize
 
 Run:

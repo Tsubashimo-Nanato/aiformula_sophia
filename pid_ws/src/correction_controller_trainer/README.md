@@ -1,9 +1,10 @@
 # correction_controller_trainer
 
-Publishes one ideal trajectory through the selectable `motor_controller` states in sequence:
+Publishes one ideal trajectory through selectable `motor_controller` states.
 
 ```text
-s0 -> 4 s stop -> s1 -> 4 s stop -> s2 -> 4 s stop
+default: s1 -> 4 s stop
+optional comparison: s0 -> 4 s stop -> s1 -> 4 s stop -> s2 -> 4 s stop
 ```
 
 Controller states:
@@ -13,6 +14,15 @@ Controller states:
 - `s2`: CorrectionControl feedforward correction applied before ideal wheel/RPM conversion.
 
 Outputs are written to the robot desktop:
+
+```text
+~/Desktop/run_YYYYMMDD_HHMMSS/
+  s1/
+    train_YYYYMMDD_HHMMSS.csv
+    log_YYYYMMDD_HHMMSS.csv
+```
+
+If `state_sequence:=0,1,2` is used, the run directory contains `s0/`, `s1/`, and `s2/`:
 
 ```text
 ~/Desktop/run_YYYYMMDD_HHMMSS/
@@ -40,15 +50,17 @@ and `motor_controller` debug fields such as base command, applied command, model
 The default test trajectory is:
 
 ```text
-2.0 m/s for 2 s
-stop for 2 s
-4.0 m/s for 1 s
-stop for 2 s
-one complete 5 m wavelength sine at 2.0 m/s, omega amplitude 0.35 rad/s
-stop for 2 s
-one complete 5 m wavelength sine at 2.0 m/s, omega amplitude 0.95 rad/s
+settle stop for 2 s
+straight holds at 1, 2, and 3 m/s
+gentle ramps 1 -> 3 m/s and 3 -> 1 m/s
+left/right constant turns at 0.8 m/s and +/-0.35 rad/s
+left/right circles at 1.0 m/s and +/-0.35 rad/s
+two-cycle sine waves at 1.5, 2.0, and 2.5 m/s
+variable-speed wave from 1.0 to 3.0 m/s
 state stop for 4 s
 ```
+
+The default is intentionally moderate: speeds stay between 1 and 3 m/s during motion, and yaw commands stay at or below about 0.35 rad/s.
 
 Pass `trajectory_json` to override the run.
 Supported segment kinds:
@@ -59,10 +71,11 @@ Supported segment kinds:
 
 Parameters:
 
-- `state_sequence`: comma-separated or JSON list of states, default `0,1,2`.
+- `state_sequence`: comma-separated or JSON list of states, default `1`.
 - `inter_state_stop_sec`: zero-command stop after each state, default `4.0`.
 - `final_stop_burst_sec`: emergency shutdown stop if interrupted, default `4.0`.
+- `autosave_period_sec`: refresh CSV outputs during a run, default `2.0`.
 - `output_root`: default `~/Desktop`.
 - `state_service_wait_sec`: wait for `/aiformula_control/motor_controller/set_parameters`, default `20.0`.
 
-The node always publishes zero `cmd_vel` before shutdown, including on interruption.
+The node always publishes zero `cmd_vel` before shutdown, including on interruption. It also autosaves both CSV files while running and rewrites CSVs atomically, so Ctrl-C or an operator stop should still leave readable outputs for the completed portion of the run.

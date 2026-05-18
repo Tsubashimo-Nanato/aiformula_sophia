@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import math
 import random
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -735,5 +736,43 @@ def main() -> None:
     print(json.dumps(metrics, indent=2))
 
 
+def maybe_run_addon_cli() -> bool:
+    addon_flags = {
+        "--addon-run-dir": "--run-dir",
+        "--addon-states": "--states",
+        "--addon-epochs": "--epochs",
+        "--addon-learning-rate": "--learning-rate",
+        "--addon-early-stop-patience": "--early-stop-patience",
+        "--addon-batch-size": "--batch-size",
+    }
+    has_addon_args = any(arg in addon_flags for arg in sys.argv[1:])
+    if not has_addon_args and any(arg in ("-h", "--help") for arg in sys.argv[1:]):
+        print(
+            "Usage:\n"
+            "  python train_correction_control.py\n"
+            "  python train_correction_control.py --addon-run-dir data/run_YYYYMMDD_HHMMSS --addon-states s1\n\n"
+            "Default mode retrains from CorrectionControl/Temp/processed/aligned_timeseries.csv.\n"
+            "Add-on mode fine-tunes the current models/correction_control.pt from trainer run CSVs.\n"
+        )
+        return True
+    if not has_addon_args:
+        return False
+
+    translated = [sys.argv[0]]
+    for arg in sys.argv[1:]:
+        translated.append(addon_flags.get(arg, arg))
+
+    old_argv = sys.argv
+    try:
+        sys.argv = translated
+        from fine_tune_correction_control import main as addon_main
+
+        addon_main()
+    finally:
+        sys.argv = old_argv
+    return True
+
+
 if __name__ == "__main__":
-    main()
+    if not maybe_run_addon_cli():
+        main()
