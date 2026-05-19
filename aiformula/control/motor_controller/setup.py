@@ -12,8 +12,8 @@ setup(
     zip_safe=True,
     maintainer='masayaokada',
     maintainer_email='masayaokada@jp.honda',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='Selectable ROS 2 motor controller with BKUP tuning and live RPM correction.',
+    license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

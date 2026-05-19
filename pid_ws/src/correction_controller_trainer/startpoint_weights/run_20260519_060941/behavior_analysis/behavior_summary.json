@@ -1,0 +1,175 @@
+{
+  "run_dir": "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941",
+  "checkpoint": "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941\\weights\\corrected_controller_rpm_startpoint.pt",
+  "output_dir": "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941\\behavior_analysis",
+  "rows": 16244,
+  "valid_final_eval_rows": 16225,
+  "checkpoint_updates": 16213,
+  "checkpoint_samples": 16244,
+  "training_halted": false,
+  "divergence_events": 0,
+  "fit_to_adaptive_target": {
+    "sent_current": {
+      "rmse_right_rpm": 80.21299317162003,
+      "rmse_left_rpm": 92.23231307800869,
+      "rmse_split_rpm": 25.39337207349818
+    },
+    "logged_online_model": {
+      "rmse_right_rpm": 23.579461315218392,
+      "rmse_left_rpm": 23.213413611189257,
+      "rmse_split_rpm": 15.216988486038602
+    },
+    "final_checkpoint": {
+      "rmse_right_rpm": 36.113380486387086,
+      "rmse_left_rpm": 36.21206528162957,
+      "rmse_split_rpm": 13.137070282376628
+    }
+  },
+  "correction_delta_rpm": {
+    "right_median_abs": 5.981530487595592,
+    "right_p95_abs": 193.44821512820903,
+    "left_median_abs": 5.534748669131659,
+    "left_p95_abs": 246.95332408249376,
+    "split_median_abs": 0.5747389793395996,
+    "split_p95_abs": 49.12542596459389,
+    "target_split_p95_abs": 15.0
+  },
+  "final_affine_params": {
+    "a_right_median": 1.0911179780960083,
+    "a_left_median": 1.014278531074524,
+    "b_right_median": 0.6789091229438782,
+    "b_left_median": 0.6903798580169678,
+    "a_right_p05": 0.6072398662567139,
+    "a_right_p95": 1.439307689666748,
+    "a_left_p05": 0.5673026800155639,
+    "a_left_p95": 1.301940989494323,
+    "b_right_p05": -104.70229949951171,
+    "b_right_p95": 11.3903776168823,
+    "b_left_p05": -91.40994415283203,
+    "b_left_p95": 22.25505828857422
+  },
+  "rpm_range": {
+    "final_max_abs_rpm": 480.08349540562995,
+    "sent_max_abs_rpm": 423.0,
+    "target_max_abs_rpm": 482.44859481784874
+  },
+  "grouped_metrics": {
+    "all": {
+      "rows": 16225,
+      "sent": {
+        "rmse_right_rpm": 80.21299317162003,
+        "rmse_left_rpm": 92.23231307800869,
+        "rmse_split_rpm": 25.39337207349818
+      },
+      "final": {
+        "rmse_right_rpm": 36.113380486387086,
+        "rmse_left_rpm": 36.21206528162957,
+        "rmse_split_rpm": 13.137070282376628
+      }
+    },
+    "moving": {
+      "rows": 6625,
+      "sent": {
+        "rmse_right_rpm": 32.4395433938379,
+        "rmse_left_rpm": 34.22491449565008,
+        "rmse_split_rpm": 5.173849731159157
+      },
+      "final": {
+        "rmse_right_rpm": 56.49772905523529,
+        "rmse_left_rpm": 56.65566642769342,
+        "rmse_split_rpm": 20.550782781686095
+      }
+    },
+    "state_0": {
+      "rows": 5357,
+      "sent": {
+        "rmse_right_rpm": 77.74492331962067,
+        "rmse_left_rpm": 83.57091060410045,
+        "rmse_split_rpm": 15.8051632758026
+      },
+      "final": {
+        "rmse_right_rpm": 29.782959671226568,
+        "rmse_left_rpm": 30.311921361698182,
+        "rmse_split_rpm": 9.408136525842878
+      }
+    },
+    "state_0_moving": {
+      "rows": 2157,
+      "sent": {
+        "rmse_right_rpm": 35.08109029489638,
+        "rmse_left_rpm": 36.68887194027238,
+        "rmse_split_rpm": 5.416696159327378
+      },
+      "final": {
+        "rmse_right_rpm": 46.904185035074555,
+        "rmse_left_rpm": 47.74451164134508,
+        "rmse_split_rpm": 14.818114872359574
+      }
+    },
+    "state_1": {
+      "rows": 5432,
+      "sent": {
+        "rmse_right_rpm": 92.96722465602183,
+        "rmse_left_rpm": 114.3106285831656,
+        "rmse_split_rpm": 39.388639693120616
+      },
+      "final": {
+        "rmse_right_rpm": 42.999296076328285,
+        "rmse_left_rpm": 42.09868135343955,
+        "rmse_split_rpm": 18.07167665026645
+      }
+    },
+    "state_1_moving": {
+      "rows": 2232,
+      "sent": {
+        "rmse_right_rpm": 28.77473379609959,
+        "rmse_left_rpm": 30.99159031533115,
+        "rmse_split_rpm": 4.771928120250556
+      },
+      "final": {
+        "rmse_right_rpm": 67.06711958711436,
+        "rmse_left_rpm": 65.66428439159826,
+        "rmse_split_rpm": 28.182588177232144
+      }
+    },
+    "state_2": {
+      "rows": 5436,
+      "sent": {
+        "rmse_right_rpm": 67.90548246898149,
+        "rmse_left_rpm": 73.82823492031415,
+        "rmse_split_rpm": 11.319378269269095
+      },
+      "final": {
+        "rmse_right_rpm": 34.21846138273566,
+        "rmse_left_rpm": 35.17761445216824,
+        "rmse_split_rpm": 10.076749273885012
+      }
+    },
+    "state_2_moving": {
+      "rows": 2236,
+      "sent": {
+        "rmse_right_rpm": 33.22956505653163,
+        "rmse_left_rpm": 34.83214646514172,
+        "rmse_split_rpm": 5.317704735641957
+      },
+      "final": {
+        "rmse_right_rpm": 53.34104807479159,
+        "rmse_left_rpm": 54.83939216124924,
+        "rmse_split_rpm": 15.705760535215187
+      }
+    }
+  },
+  "plots": [
+    "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941\\behavior_analysis\\behavior_cmd_vs_measured.png",
+    "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941\\behavior_analysis\\behavior_rpm_target_fit.png",
+    "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941\\behavior_analysis\\behavior_rpm_split.png",
+    "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941\\behavior_analysis\\behavior_correction_delta.png",
+    "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941\\behavior_analysis\\behavior_affine_params.png",
+    "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941\\behavior_analysis\\behavior_loss.png",
+    "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941\\behavior_analysis\\behavior_split_rmse_summary.png",
+    "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941\\behavior_analysis\\behavior_split_scatter_moving.png",
+    "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941\\behavior_analysis\\behavior_split_error_hist_moving.png",
+    "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941\\behavior_analysis\\behavior_state2_window.png",
+    "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941\\behavior_analysis\\behavior_state2_window_smoothed.png"
+  ]
+}

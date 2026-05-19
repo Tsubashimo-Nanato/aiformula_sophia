@@ -1,0 +1,82 @@
+{
+  "mode": "addon_fine_tune",
+  "base_checkpoint": "models/correction_control.pt",
+  "run_dirs": [
+    "data/run_20260518_172344",
+    "data/run_20260518_172502",
+    "data/run_20260518_172615"
+  ],
+  "states": [
+    "s1"
+  ],
+  "selected_rows": 1068,
+  "samples": {
+    "total": 1005,
+    "train": 703,
+    "val": 151,
+    "test": 151
+  },
+  "initial_val_loss": 0.18357716954701783,
+  "initial_val_aggressive_loss": 0.6949311052726594,
+  "best_epoch": 118,
+  "best_val_loss": 0.3134294770016576,
+  "fine_tune_config": {
+    "label": "aggressive_20260518_172x",
+    "states": [
+      "s1"
+    ],
+    "epochs": 240,
+    "learning_rate": 0.0005,
+    "early_stop_patience": 45,
+    "batch_size": 64,
+    "v_loss_weight": 2.0,
+    "omega_loss_weight": 24.0,
+    "turn_loss_boost": 3.0,
+    "speed_loss_boost": 1.5,
+    "lambda_gain": 0.0001,
+    "lambda_bias": 0.0001
+  },
+  "training_config": {
+    "history_steps": 20,
+    "horizon_steps": 1,
+    "train_ratio": 0.7,
+    "val_ratio": 0.15,
+    "batch_size": 128,
+    "epochs": 500,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "hidden_size": 32,
+    "gru_layers": 1,
+    "dropout": 0.0,
+    "lambda_gain": 0.001,
+    "lambda_bias": 0.001,
+    "omega_loss_weight": 8.0,
+    "early_stop_patience": 80,
+    "seed": 7,
+    "max_gap_seconds": 0.075,
+    "gain_span": 0.75,
+    "max_bias_v": 0.75,
+    "max_bias_omega": 0.35,
+    "correction_clip_v": 3.0,
+    "correction_clip_omega": 1.0
+  },
+  "train": {
+    "rmse_v": 0.81696617603302,
+    "rmse_omega": 0.03506525233387947,
+    "baseline_rmse_v": 1.5885297060012817,
+    "baseline_rmse_omega": 0.24869704246520996
+  },
+  "val": {
+    "rmse_v": 0.5180841684341431,
+    "rmse_omega": 0.03321516886353493,
+    "baseline_rmse_v": 1.4588813781738281,
+    "baseline_rmse_omega": 0.12352090328931808
+  },
+  "test": {
+    "rmse_v": 0.9908101558685303,
+    "rmse_omega": 0.044136326760053635,
+    "baseline_rmse_v": 1.7305676937103271,
+    "baseline_rmse_omega": 0.35734209418296814
+  },
+  "device": "cpu"
+}

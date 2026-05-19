@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+import io
 import math
 import sys
 from collections import deque
@@ -18,8 +19,14 @@ from nav_msgs.msg import Odometry
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from rclpy.parameter import Parameter as RclpyParameter
+try:
+    from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
+except ImportError:
+    from rclpy.qos import QoSDurabilityPolicy as DurabilityPolicy
+    from rclpy.qos import QoSProfile
+    from rclpy.qos import QoSReliabilityPolicy as ReliabilityPolicy
 from sensor_msgs.msg import Joy
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import ByteMultiArray, Float64MultiArray
 from torch import nn
 
 
@@ -64,6 +71,46 @@ class CorrectionControlModel(nn.Module):
         return torch.stack([a_v, a_omega, b_v, b_omega], dim=-1)
 
 
+class RpmAffineModel(nn.Module):
+    def __init__(
+        self,
+        history_dim: int,
+        command_dim: int,
+        hidden_size: int,
+        gru_layers: int,
+        dropout: float,
+        gain_span: float,
+        max_bias_rpm: float,
+    ) -> None:
+        super().__init__()
+        self.gain_span = float(gain_span)
+        self.max_bias_rpm = float(max_bias_rpm)
+        self.gru = nn.GRU(
+            input_size=history_dim,
+            hidden_size=hidden_size,
+            num_layers=gru_layers,
+            batch_first=True,
+            dropout=dropout if gru_layers > 1 else 0.0,
+        )
+        self.head = nn.Sequential(
+            nn.Linear(hidden_size + command_dim, 96),
+            nn.ReLU(),
+            nn.Linear(96, 48),
+            nn.ReLU(),
+            nn.Linear(48, 4),
+        )
+
+    def forward(self, history_norm: torch.Tensor, command_norm: torch.Tensor) -> torch.Tensor:
+        _, hidden = self.gru(history_norm)
+        context = hidden[-1]
+        raw = self.head(torch.cat([context, command_norm], dim=-1))
+        a_right = 1.0 + self.gain_span * torch.tanh(raw[:, 0])
+        a_left = 1.0 + self.gain_span * torch.tanh(raw[:, 1])
+        b_right = self.max_bias_rpm * torch.tanh(raw[:, 2])
+        b_left = self.max_bias_rpm * torch.tanh(raw[:, 3])
+        return torch.stack([a_right, a_left, b_right, b_left], dim=-1)
+
+
 class MotorController(Node):
     DEBUG_FIELDS = [
         "node_time_sec",
@@ -91,7 +138,21 @@ class MotorController(Node):
         "left_rpm",
         "can_right_rpm",
         "can_left_rpm",
+        "rpm_weights_loaded",
+        "rpm_correction_ready",
+        "rpm_model_applied",
+        "rpm_model_right_rpm",
+        "rpm_model_left_rpm",
+        "rpm_a_right",
+        "rpm_a_left",
+        "rpm_b_right",
+        "rpm_b_left",
+        "rpm_history_len",
+        "rpm_history_ready",
     ]
+
+    RPM_FEATURE_COLUMNS = ["cmd_v", "cmd_omega", "meas_v", "meas_omega", "ideal_right_rpm", "ideal_left_rpm"]
+    RPM_COMMAND_COLUMNS = ["ideal_right_rpm", "ideal_left_rpm", "cmd_v", "cmd_omega"]
 
     STATE_IDEAL = 0
     STATE_BKUP = 1
@@ -101,7 +162,7 @@ class MotorController(Node):
     def __init__(self):
         super().__init__("motor_controller")
 
-        self.declare_parameter("controller_state", self.STATE_CORRECTED)
+        self.declare_parameter("controller_state", self.STATE_BKUP)
         self.declare_parameter("publish_timer_loop_duration", 0.01)
         self.declare_parameter("wheel.tread", 0.60)
         self.declare_parameter("wheel.diameter", 0.254)
@@ -114,8 +175,12 @@ class MotorController(Node):
         self.declare_parameter("state1_button_circle", 1)
         self.declare_parameter("state2_button_cross", 0)
         self.declare_parameter("debug_topic", "/aiformula_control/motor_controller/correction_debug")
+        self.declare_parameter("rpm_weight_topic", "/aiformula_control/correction_controller_trainer/rpm_weights")
+        self.declare_parameter("rpm_correction_enabled", True)
+        self.declare_parameter("rpm_fallback_to_body_correction", False)
         self.declare_parameter("history_sample_period_sec", 0.05)
         self.declare_parameter("history_span_tolerance_sec", 0.30)
+        self.declare_parameter("max_command_v", 4.0)
         self.declare_parameter("max_corrected_v", 3.0)
         self.declare_parameter("max_corrected_omega", 1.0)
         self.declare_parameter("stop_deadband", 1.0e-4)
@@ -134,8 +199,12 @@ class MotorController(Node):
         self.state1_button_circle = int(self.get_parameter("state1_button_circle").value)
         self.state2_button_cross = int(self.get_parameter("state2_button_cross").value)
         self.debug_topic = str(self.get_parameter("debug_topic").value)
+        self.rpm_weight_topic = str(self.get_parameter("rpm_weight_topic").value)
+        self.rpm_correction_enabled = bool(self.get_parameter("rpm_correction_enabled").value)
+        self.rpm_fallback_to_body_correction = bool(self.get_parameter("rpm_fallback_to_body_correction").value)
         self.history_sample_period_sec = float(self.get_parameter("history_sample_period_sec").value)
         self.history_span_tolerance_sec = float(self.get_parameter("history_span_tolerance_sec").value)
+        self.max_command_v = max(0.0, float(self.get_parameter("max_command_v").value))
         self.max_corrected_v = float(self.get_parameter("max_corrected_v").value)
         self.max_corrected_omega = float(self.get_parameter("max_corrected_omega").value)
         self.stop_deadband = max(0.0, float(self.get_parameter("stop_deadband").value))
@@ -164,6 +233,23 @@ class MotorController(Node):
         if self.command_columns != expected_commands:
             raise RuntimeError(f"Expected affine command columns {expected_commands}, got {self.command_columns}")
 
+        self.rpm_model = None
+        self.rpm_config: dict = {}
+        self.rpm_history_steps = 20
+        self.rpm_max_abs_rpm = 650.0
+        self.rpm_v_scale = 3.0
+        self.rpm_omega_scale = 1.0
+        self.rpm_rpm_scale = 350.0
+        self.rpm_loaded_updates = -1
+        self.rpm_loaded_samples = 0
+        self.rpm_live_weights_loaded = False
+        self.rpm_latest_params = np.asarray([1.0, 1.0, 0.0, 0.0], dtype=np.float32)
+        self.rpm_latest_model_right = 0.0
+        self.rpm_latest_model_left = 0.0
+        self.rpm_history: deque[list[float]] = deque(maxlen=self.rpm_history_steps)
+        self.rpm_history_times: deque[float] = deque(maxlen=self.rpm_history_steps)
+        self.last_rpm_history_sample_time: float | None = None
+
         self.history: deque[list[float]] = deque(maxlen=self.history_steps)
         self.history_times: deque[float] = deque(maxlen=self.history_steps)
         self.last_history_sample_time: float | None = None
@@ -183,6 +269,12 @@ class MotorController(Node):
         )
         self.odom_sub = self.create_subscription(Odometry, self.odom_topic, self.odom_callback, buffer_size)
         self.joy_sub = self.create_subscription(Joy, self.joy_topic, self.joy_callback, buffer_size)
+        self.rpm_weight_sub = self.create_subscription(
+            ByteMultiArray,
+            self.rpm_weight_topic,
+            self.rpm_weight_callback,
+            self.live_weight_qos_profile(),
+        )
         self.can_pub = self.create_publisher(Frame, "pub_can", buffer_size)
         self.debug_pub = self.create_publisher(Float64MultiArray, self.debug_topic, buffer_size)
         self.publish_timer = self.create_timer(publish_timer_loop_duration, self.publish_canframe_callback)
@@ -198,13 +290,14 @@ class MotorController(Node):
         self.log_info("Loaded selectable motor controller.")
         self.log_info("State 0: ideal diff-drive, no empirical tuning.")
         self.log_info("State 1: copied BKUP controller tuning, no correction applied.")
-        self.log_info("State 2: CorrectionControl feedforward correction applied before ideal wheel/RPM conversion.")
+        self.log_info("State 2: live RPM correction when weights are received; ideal RPM while warming up.")
         self.log_info(f"Initial controller_state={self.controller_state}.")
         self.log_info(
             "PS4 state buttons: triangle->0, circle->1, cross/X->2 "
             f"on Joy topic {self.joy_topic}."
         )
         self.log_info(f"Correction debug topic: {self.debug_topic}")
+        self.log_info(f"Live RPM weight topic: {self.rpm_weight_topic}")
 
     def destroy_node(self):
         if self.debug_csv_file is not None:
@@ -222,6 +315,8 @@ class MotorController(Node):
                     return SetParametersResult(successful=False, reason=str(exc))
                 if next_state != self.controller_state:
                     self.controller_state = next_state
+                    if next_state != self.STATE_CORRECTED:
+                        self.unload_live_rpm_model()
                     self.get_logger().warning(f"controller_state changed to {self.controller_state}")
         return SetParametersResult(successful=True)
 
@@ -230,6 +325,21 @@ class MotorController(Node):
         if state not in self.VALID_STATES:
             raise ValueError(f"controller_state must be 0, 1, or 2; got {value}")
         return state
+
+    def unload_live_rpm_model(self) -> None:
+        # 关键：离开 mode 2 就清掉实时权重，mode 0/1 不继续用旧模型。
+        if self.rpm_model is not None or self.rpm_live_weights_loaded:
+            self.get_logger().warning("Unloading live RPM correction model because controller_state left state 2.")
+        self.rpm_model = None
+        self.rpm_live_weights_loaded = False
+        self.rpm_loaded_updates = -1
+        self.rpm_loaded_samples = 0
+        self.rpm_latest_params = np.asarray([1.0, 1.0, 0.0, 0.0], dtype=np.float32)
+        self.rpm_latest_model_right = 0.0
+        self.rpm_latest_model_left = 0.0
+        self.rpm_history.clear()
+        self.rpm_history_times.clear()
+        self.last_rpm_history_sample_time = None
 
     def resolve_debug_csv_path(self, configured: str) -> Path:
         path = Path(configured or "correction_control_debug.csv").expanduser()
@@ -244,6 +354,14 @@ class MotorController(Node):
     def log_info(self, message: str) -> None:
         self.get_logger().info(str(message))
 
+    @staticmethod
+    def live_weight_qos_profile() -> QoSProfile:
+        return QoSProfile(
+            depth=1,
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+        )
+
     def open_debug_csv(self) -> None:
         if not self.debug_compare_enabled:
             return
@@ -255,6 +373,67 @@ class MotorController(Node):
         self.debug_csv_writer.writeheader()
         self.debug_csv_file.flush()
         self.log_info(f"Writing correction debug CSV: {self.debug_csv_path}")
+
+    def rpm_weight_callback(self, msg: ByteMultiArray) -> None:
+        # 关键：只有 mode 2 会加载实时权重，mode 0/1 保持卸载状态。
+        if not self.rpm_correction_enabled:
+            return
+        if self.controller_state != self.STATE_CORRECTED:
+            return
+        try:
+            raw_payload = bytes(
+                value[0] if isinstance(value, (bytes, bytearray)) else int(value) & 0xFF
+                for value in msg.data
+            )
+            buffer = io.BytesIO(raw_payload)
+            try:
+                payload = torch.load(buffer, map_location="cpu", weights_only=False)
+            except TypeError:
+                buffer.seek(0)
+                payload = torch.load(buffer, map_location="cpu")
+            self.load_rpm_checkpoint(payload)
+        except Exception as exc:
+            self.get_logger().error(f"Failed to load live RPM correction weights: {exc}")
+
+    def load_rpm_checkpoint(self, checkpoint: dict) -> None:
+        feature_columns = list(checkpoint.get("feature_cols", []))
+        command_columns = list(checkpoint.get("command_cols", []))
+        if feature_columns != self.RPM_FEATURE_COLUMNS:
+            raise RuntimeError(f"Expected RPM features {self.RPM_FEATURE_COLUMNS}, got {feature_columns}")
+        if command_columns != self.RPM_COMMAND_COLUMNS:
+            raise RuntimeError(f"Expected RPM commands {self.RPM_COMMAND_COLUMNS}, got {command_columns}")
+        config = dict(checkpoint.get("config", {}))
+        model = RpmAffineModel(
+            history_dim=len(feature_columns),
+            command_dim=len(command_columns),
+            hidden_size=int(config.get("hidden_size", 48)),
+            gru_layers=int(config.get("gru_layers", 1)),
+            dropout=float(config.get("dropout", 0.0)),
+            gain_span=float(config.get("gain_span", 2.0)),
+            max_bias_rpm=float(config.get("max_bias_rpm", 260.0)),
+        )
+        model.load_state_dict(checkpoint["model"])
+        model.eval()
+
+        history_steps = int(config.get("history_steps", 20))
+        if history_steps != self.rpm_history_steps:
+            self.rpm_history_steps = history_steps
+            self.rpm_history = deque(list(self.rpm_history)[-history_steps:], maxlen=history_steps)
+            self.rpm_history_times = deque(list(self.rpm_history_times)[-history_steps:], maxlen=history_steps)
+
+        self.rpm_model = model
+        self.rpm_config = config
+        self.rpm_max_abs_rpm = float(config.get("max_abs_rpm", 650.0))
+        self.rpm_v_scale = float(config.get("v_scale", 3.0))
+        self.rpm_omega_scale = float(config.get("omega_scale", 1.0))
+        self.rpm_rpm_scale = float(config.get("rpm_scale", 350.0))
+        self.rpm_loaded_updates = int(checkpoint.get("updates", -1))
+        self.rpm_loaded_samples = int(checkpoint.get("sample_rows", 0))
+        self.rpm_live_weights_loaded = True
+        self.get_logger().warning(
+            "Loaded live RPM correction weights "
+            f"(samples={self.rpm_loaded_samples}, updates={self.rpm_loaded_updates})."
+        )
 
     def resolve_model_path(self) -> Path:
         configured = str(self.get_parameter("model_path").value or "").strip()
@@ -342,14 +521,24 @@ class MotorController(Node):
             reason = results[0].reason if results else "no result returned"
             self.get_logger().error(f"Failed to switch controller_state from Joy {button_name}: {reason}")
 
+    @staticmethod
+    def clamp_command(value: float, limit: float) -> float:
+        if limit <= 0.0:
+            return float(value)
+        return float(np.clip(value, -limit, limit))
+
     def twist_callback(self, msg: Twist) -> None:
-        base_v = float(msg.linear.x)
+        base_v = self.clamp_command(float(msg.linear.x), self.max_command_v)
         base_omega = float(msg.angular.z)
         now_sec = self.get_clock().now().nanoseconds * 1.0e-9
         is_stop_command = abs(base_v) <= self.stop_deadband and abs(base_omega) <= self.stop_deadband
 
         self.append_latest_response_to_history(now_sec)
         history_ready, history_span_sec = self.history_ready()
+        rpm_history_ready = False
+        if self.controller_state == self.STATE_CORRECTED and self.rpm_correction_enabled and self.rpm_model is not None:
+            self.append_latest_response_to_rpm_history(base_v, base_omega, now_sec)
+            rpm_history_ready, _ = self.rpm_history_ready()
         model_v, model_omega, params, used_model_estimate = self.correct_command(
             base_v,
             base_omega,
@@ -360,7 +549,12 @@ class MotorController(Node):
             applied_v = 0.0
             applied_omega = 0.0
             used_model_applied = False
-        elif self.controller_state == self.STATE_CORRECTED and used_model_estimate:
+        elif (
+            self.controller_state == self.STATE_CORRECTED
+            and (self.rpm_model is None or not rpm_history_ready)
+            and self.rpm_fallback_to_body_correction
+            and used_model_estimate
+        ):
             applied_v = model_v
             applied_omega = model_omega
             used_model_applied = True
@@ -369,10 +563,30 @@ class MotorController(Node):
             applied_omega = base_omega
             used_model_applied = False
 
-        right_rpm, left_rpm = self.cmd_to_can_rpms(applied_v, applied_omega, self.controller_state)
+        rpm_model_applied = False
+        rpm_params = np.asarray([1.0, 1.0, 0.0, 0.0], dtype=np.float32)
+        rpm_model_right = math.nan
+        rpm_model_left = math.nan
+        if (
+            not is_stop_command
+            and self.controller_state == self.STATE_CORRECTED
+            and self.rpm_correction_enabled
+            and self.rpm_model is not None
+            and rpm_history_ready
+        ):
+            # 关键：mode 2 权重和历史窗口都就绪时，直接输出左右轮 RPM。
+            right_rpm, left_rpm, rpm_params = self.correct_rpm(base_v, base_omega)
+            rpm_model_right = right_rpm
+            rpm_model_left = left_rpm
+            rpm_model_applied = True
+            used_model_applied = True
+        else:
+            right_rpm, left_rpm = self.cmd_to_can_rpms(applied_v, applied_omega, self.controller_state)
         if is_stop_command:
             right_rpm = 0.0
             left_rpm = 0.0
+            rpm_model_right = 0.0
+            rpm_model_left = 0.0
         cmd_right = self.toCanCmd(right_rpm)
         cmd_left = self.toCanCmd(left_rpm)
         self.frame_msg.data = cmd_right + cmd_left
@@ -390,10 +604,15 @@ class MotorController(Node):
             params=params,
             history_ready=history_ready,
             history_span_sec=history_span_sec,
-            used_model_estimate=used_model_estimate,
+            used_model_estimate=used_model_estimate or rpm_history_ready,
             used_model_applied=used_model_applied,
             right_rpm=right_rpm,
             left_rpm=left_rpm,
+            rpm_params=rpm_params,
+            rpm_history_ready=rpm_history_ready,
+            rpm_model_applied=rpm_model_applied,
+            rpm_model_right=rpm_model_right,
+            rpm_model_left=rpm_model_left,
         )
         self.publish_debug(debug_row)
         self.log_debug_compare(debug_row)
@@ -419,6 +638,28 @@ class MotorController(Node):
         self.last_history_sample_time = float(now_sec)
         return True
 
+    def append_latest_response_to_rpm_history(self, base_v: float, base_omega: float, now_sec: float) -> bool:
+        if self.latest_meas_v is None or self.latest_meas_omega is None:
+            return False
+        if (
+            self.last_rpm_history_sample_time is not None
+            and now_sec - self.last_rpm_history_sample_time < self.history_sample_period_sec
+        ):
+            return False
+        ideal_right, ideal_left = self.ideal_cmd_to_can_rpms(base_v, base_omega)
+        sample = self.normalized_rpm_feature(
+            base_v,
+            base_omega,
+            self.latest_meas_v,
+            self.latest_meas_omega,
+            ideal_right,
+            ideal_left,
+        )
+        self.rpm_history.append(sample)
+        self.rpm_history_times.append(float(now_sec))
+        self.last_rpm_history_sample_time = float(now_sec)
+        return True
+
     def history_span_sec(self) -> float | None:
         if len(self.history_times) < 2:
             return None
@@ -435,8 +676,64 @@ class MotorController(Node):
             return False, span
         return True, span
 
+    def rpm_history_ready(self) -> tuple[bool, float | None]:
+        if self.rpm_model is None:
+            return False, self.rpm_history_span_sec()
+        if self.latest_meas_v is None or self.latest_meas_omega is None:
+            return False, self.rpm_history_span_sec()
+        if len(self.rpm_history) < self.rpm_history_steps or len(self.rpm_history_times) < self.rpm_history_steps:
+            return False, self.rpm_history_span_sec()
+        span = self.rpm_history_span_sec()
+        expected_span = (self.rpm_history_steps - 1) * self.history_sample_period_sec
+        if span is None or abs(span - expected_span) > self.history_span_tolerance_sec:
+            return False, span
+        return True, span
+
+    def rpm_history_span_sec(self) -> float | None:
+        if len(self.rpm_history_times) < 2:
+            return None
+        return float(self.rpm_history_times[-1] - self.rpm_history_times[0])
+
     def history_sequence(self) -> np.ndarray:
         return np.asarray(list(self.history), dtype=np.float32)
+
+    def rpm_history_sequence(self) -> np.ndarray:
+        return np.asarray(list(self.rpm_history), dtype=np.float32)
+
+    def normalized_rpm_feature(
+        self,
+        cmd_v: float,
+        cmd_omega: float,
+        meas_v: float,
+        meas_omega: float,
+        ideal_right_rpm: float,
+        ideal_left_rpm: float,
+    ) -> list[float]:
+        return [
+            float(cmd_v) / self.rpm_v_scale,
+            float(cmd_omega) / self.rpm_omega_scale,
+            float(meas_v) / self.rpm_v_scale,
+            float(meas_omega) / self.rpm_omega_scale,
+            float(ideal_right_rpm) / self.rpm_rpm_scale,
+            float(ideal_left_rpm) / self.rpm_rpm_scale,
+        ]
+
+    def normalized_rpm_command(
+        self,
+        ideal_right_rpm: float,
+        ideal_left_rpm: float,
+        cmd_v: float,
+        cmd_omega: float,
+    ) -> np.ndarray:
+        return np.asarray(
+            [
+                float(ideal_right_rpm) / self.rpm_rpm_scale,
+                float(ideal_left_rpm) / self.rpm_rpm_scale,
+                float(cmd_v) / self.rpm_v_scale,
+                float(cmd_omega) / self.rpm_omega_scale,
+            ],
+            dtype=np.float32,
+        )
 
     def correct_command(
         self,
@@ -467,6 +764,36 @@ class MotorController(Node):
         corrected_v = float(np.clip(corrected_v, -self.max_corrected_v, self.max_corrected_v))
         corrected_omega = float(np.clip(corrected_omega, -self.max_corrected_omega, self.max_corrected_omega))
         return corrected_v, corrected_omega, params, True
+
+    def correct_rpm(self, base_v: float, base_omega: float) -> tuple[float, float, np.ndarray]:
+        if self.rpm_model is None:
+            right, left = self.ideal_cmd_to_can_rpms(base_v, base_omega)
+            return right, left, np.asarray([1.0, 1.0, 0.0, 0.0], dtype=np.float32)
+
+        ideal_right, ideal_left = self.ideal_cmd_to_can_rpms(base_v, base_omega)
+        history_norm = self.rpm_history_sequence()
+        command_norm = self.normalized_rpm_command(ideal_right, ideal_left, base_v, base_omega)
+        command_raw = np.asarray([ideal_right, ideal_left, base_v, base_omega], dtype=np.float32)
+
+        with torch.no_grad():
+            params = self.rpm_model(
+                torch.as_tensor(history_norm[None, :, :], dtype=torch.float32),
+                torch.as_tensor(command_norm[None, :], dtype=torch.float32),
+            ).cpu().numpy()[0]
+
+        a_right = max(float(params[0]), 1.0e-4)
+        a_left = max(float(params[1]), 1.0e-4)
+        b_right = float(params[2])
+        b_left = float(params[3])
+        right_rpm = a_right * float(command_raw[0]) + b_right
+        left_rpm = a_left * float(command_raw[1]) + b_left
+        right_rpm = float(np.clip(right_rpm, -self.rpm_max_abs_rpm, self.rpm_max_abs_rpm))
+        left_rpm = float(np.clip(left_rpm, -self.rpm_max_abs_rpm, self.rpm_max_abs_rpm))
+
+        self.rpm_latest_params = np.asarray([a_right, a_left, b_right, b_left], dtype=np.float32)
+        self.rpm_latest_model_right = right_rpm
+        self.rpm_latest_model_left = left_rpm
+        return right_rpm, left_rpm, self.rpm_latest_params
 
     def cmd_to_can_rpms(self, linear_velocity: float, angular_velocity: float, state: int) -> tuple[float, float]:
         if abs(linear_velocity) <= self.stop_deadband and abs(angular_velocity) <= self.stop_deadband:
@@ -535,6 +862,11 @@ class MotorController(Node):
         used_model_applied: bool,
         right_rpm: float,
         left_rpm: float,
+        rpm_params: np.ndarray,
+        rpm_history_ready: bool,
+        rpm_model_applied: bool,
+        rpm_model_right: float,
+        rpm_model_left: float,
     ) -> dict:
         can_right_rpm = int.from_bytes(bytes(self.frame_msg.data[0:4]), "little", signed=True)
         can_left_rpm = int.from_bytes(bytes(self.frame_msg.data[4:8]), "little", signed=True)
@@ -564,6 +896,17 @@ class MotorController(Node):
             "left_rpm": float(left_rpm),
             "can_right_rpm": float(can_right_rpm),
             "can_left_rpm": float(can_left_rpm),
+            "rpm_weights_loaded": float(bool(self.rpm_live_weights_loaded)),
+            "rpm_correction_ready": float(bool(rpm_history_ready and self.rpm_model is not None)),
+            "rpm_model_applied": float(bool(rpm_model_applied)),
+            "rpm_model_right_rpm": float(rpm_model_right),
+            "rpm_model_left_rpm": float(rpm_model_left),
+            "rpm_a_right": float(rpm_params[0]),
+            "rpm_a_left": float(rpm_params[1]),
+            "rpm_b_right": float(rpm_params[2]),
+            "rpm_b_left": float(rpm_params[3]),
+            "rpm_history_len": float(len(self.rpm_history)),
+            "rpm_history_ready": float(bool(rpm_history_ready)),
         }
 
     def publish_debug(self, debug_row: dict) -> None:

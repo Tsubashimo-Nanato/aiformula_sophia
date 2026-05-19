@@ -1,0 +1,45 @@
+{
+  "label": "aggressive_20260518_172x",
+  "before_checkpoint": "models/correction_control_before_aggressive_addon_20260519.pt",
+  "after_checkpoint": "models/correction_control.pt",
+  "run_dirs": [
+    "data/run_20260518_172344",
+    "data/run_20260518_172502",
+    "data/run_20260518_172615"
+  ],
+  "states": [
+    "s1"
+  ],
+  "rows": 1068,
+  "samples": 1005,
+  "before": {
+    "rmse_v": 0.8449919819831848,
+    "rmse_omega": 0.09026210010051727,
+    "baseline_rmse_v": 1.5921365022659302,
+    "baseline_rmse_omega": 0.2544456422328949,
+    "delta_v_abs_mean": 0.9748421907424927,
+    "delta_omega_abs_mean": 0.13183173537254333,
+    "turn_delta_omega_abs_mean": 0.22865070402622223,
+    "turn_corrected_omega_abs_mean": 0.6866945028305054,
+    "omega_clip_ratio": 0.0955223880597015,
+    "v_clip_ratio": 0.2228855721393035
+  },
+  "after": {
+    "rmse_v": 0.8091352581977844,
+    "rmse_omega": 0.03631167486310005,
+    "baseline_rmse_v": 1.5921365022659302,
+    "baseline_rmse_omega": 0.2544456422328949,
+    "delta_v_abs_mean": 0.6709238290786743,
+    "delta_omega_abs_mean": 0.17492833733558655,
+    "turn_delta_omega_abs_mean": 0.33517029881477356,
+    "turn_corrected_omega_abs_mean": 0.7778760194778442,
+    "omega_clip_ratio": 0.13034825870646766,
+    "v_clip_ratio": 0.23582089552238805
+  },
+  "plots": {
+    "response_compare": "figures/aggressive_20260518_172x_response_compare.png",
+    "command_correction_compare": "figures/aggressive_20260518_172x_command_correction_compare.png",
+    "prediction_scatter": "figures/aggressive_20260518_172x_prediction_scatter.png"
+  },
+  "note": "This compares model fit and the command that would be sent by the current v/omega correction path; it does not prove physical improvement without a new robot run."
+}

@@ -1,0 +1,91 @@
+{
+  "selected_rows": 4293,
+  "samples": {
+    "total": 4041,
+    "train": 2828,
+    "val": 606,
+    "test": 607
+  },
+  "run_dirs": [
+    "run_20260518_132537",
+    "run_20260518_172344",
+    "run_20260518_172502",
+    "run_20260518_172615"
+  ],
+  "states": [
+    "s0",
+    "s1",
+    "s2"
+  ],
+  "best_epoch": 120,
+  "best_val_loss": 922.3274489802496,
+  "config": {
+    "history_steps": 20,
+    "horizon_steps": 1,
+    "train_ratio": 0.7,
+    "val_ratio": 0.15,
+    "batch_size": 128,
+    "epochs": 360,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "hidden_size": 48,
+    "gru_layers": 1,
+    "dropout": 0.0,
+    "gain_span": 2.0,
+    "max_bias_rpm": 260.0,
+    "split_loss_weight": 3.0,
+    "lambda_gain": 0.0001,
+    "lambda_bias": 1e-05,
+    "early_stop_patience": 70,
+    "seed": 11,
+    "max_gap_seconds": 0.075,
+    "wheel_tread": 0.6,
+    "wheel_diameter": 0.254,
+    "wheel_gear_ratio": 1.1,
+    "stop_deadband": 0.0001
+  },
+  "reverse_engineering_validation_against_s1_can": {
+    "available": true,
+    "rows": 625,
+    "right_mae_rpm": 0.0,
+    "left_mae_rpm": 0.0,
+    "right_max_abs_rpm": 0.0,
+    "left_max_abs_rpm": 0.0
+  },
+  "train": {
+    "rmse_right": 30.023406982421875,
+    "rmse_left": 29.85299301147461,
+    "split_rmse": 2.1480603218078613,
+    "baseline_rmse_right": 68.78311920166016,
+    "baseline_rmse_left": 67.86575317382812,
+    "baseline_split_rmse": 76.4869155883789
+  },
+  "val": {
+    "rmse_right": 30.278451919555664,
+    "rmse_left": 30.05913734436035,
+    "split_rmse": 2.0049421787261963,
+    "baseline_rmse_right": 65.07442474365234,
+    "baseline_rmse_left": 68.6946029663086,
+    "baseline_split_rmse": 77.65189361572266
+  },
+  "test": {
+    "rmse_right": 25.0767822265625,
+    "rmse_left": 24.997093200683594,
+    "split_rmse": 2.0996923446655273,
+    "baseline_rmse_right": 67.6138687133789,
+    "baseline_rmse_left": 67.56095886230469,
+    "baseline_split_rmse": 81.57840728759766
+  },
+  "artifacts": {
+    "model": "corrected_controller_rpm/models/corrected_controller_rpm.pt",
+    "selected_data": "corrected_controller_rpm/data/selected_rpm_training_data.csv",
+    "figures": [
+      "corrected_controller_rpm/figures/loss_curve.png",
+      "corrected_controller_rpm/figures/test_rpm_prediction.png",
+      "corrected_controller_rpm/figures/test_rpm_split.png",
+      "corrected_controller_rpm/figures/test_rpm_scatter.png",
+      "corrected_controller_rpm/figures/test_affine_params.png"
+    ]
+  },
+  "device": "cpu"
+}

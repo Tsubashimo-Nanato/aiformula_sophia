@@ -1,0 +1,15 @@
+{
+  "mode": "addon_fine_tune",
+  "raw_run_dirs": [
+    "data/run_20260518_172344",
+    "data/run_20260518_172502",
+    "data/run_20260518_172615"
+  ],
+  "states_used_for_training": [
+    "s1"
+  ],
+  "selected_training_csv": "data/addon_aggressive_20260518_172x_s1_selected_training_data.csv",
+  "metrics": "reports/addon_aggressive_20260518_172x_s1_metrics.json",
+  "history": "reports/addon_aggressive_20260518_172x_s1_training_history.csv",
+  "note": "The raw run folders are preserved under Training/data. Add-on training preserves checkpoint normalization stats."
+}

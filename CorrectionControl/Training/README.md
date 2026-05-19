@@ -87,6 +87,34 @@ The same add-on path is also available directly through:
 python fine_tune_correction_control.py --run-dir data/run_20260518_132537 --states s1
 ```
 
+For a more aggressive add-on pass that emphasizes speed and steering error, repeat `--addon-run-dir` and tune the loss weights:
+
+```powershell
+python train_correction_control.py `
+  --addon-label aggressive_20260518_172x `
+  --addon-run-dir data/run_20260518_172344 `
+  --addon-run-dir data/run_20260518_172502 `
+  --addon-run-dir data/run_20260518_172615 `
+  --addon-states s1 `
+  --addon-v-loss-weight 2.0 `
+  --addon-omega-loss-weight 24.0 `
+  --addon-turn-loss-boost 3.0 `
+  --addon-speed-loss-boost 1.5
+```
+
+Compare an older checkpoint against the refreshed one with:
+
+```powershell
+python compare_correction_checkpoints.py `
+  --label aggressive_20260518_172x `
+  --before models/correction_control_before_aggressive_addon_20260519.pt `
+  --after models/correction_control.pt `
+  --run-dir data/run_20260518_172344 `
+  --run-dir data/run_20260518_172502 `
+  --run-dir data/run_20260518_172615 `
+  --states s1
+```
+
 ## Visualize
 
 Run:

@@ -1,0 +1,10 @@
+{
+  "samples": 3523,
+  "updates": 3492,
+  "pred_target_rmse_right_rpm": 24.280893760105844,
+  "pred_target_rmse_left_rpm": 25.72632393855594,
+  "pred_target_split_rmse": 4.475920586926301,
+  "current_target_split_rmse": 8.805938476415971,
+  "tracking_rmse_v": 1.821579004816604,
+  "tracking_rmse_omega": 0.5071325572384845
+}

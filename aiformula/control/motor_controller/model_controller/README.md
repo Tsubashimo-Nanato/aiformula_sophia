@@ -1,15 +1,16 @@
-# CorrectionControl Motor Controller Model
+# CorrectionControl Model Folder
 
-Place `correction_control.pt` in this folder.
+Place the legacy body-space `correction_control.pt` in this folder.
 
-The active `motor_controller` executable loads this checkpoint in all controller states so logger runs can
-compare the model output even when correction is not applied.
+For the current RPM correction controller docs, see `../README.md`.
+
+The active `motor_controller` executable still loads this body-space checkpoint in all controller states so logger runs can compare old model output even when correction is not applied.
 
 Controller states:
 
 - `controller_state=0`: ideal diff-drive conversion, no empirical tuning and no correction applied.
 - `controller_state=1`: copied BKUP tuning, no correction applied.
-- `controller_state=2`: CorrectionControl feedforward correction applied before ideal wheel/RPM conversion.
+- `controller_state=2`: live RPM correction when trainer weights are available; ideal RPM while weights/history warm up.
 
 On the standard PS4/DualShock4 Joy mapping used by the launchers:
 
@@ -17,13 +18,13 @@ On the standard PS4/DualShock4 Joy mapping used by the launchers:
 - Circle selects state `1`.
 - Cross/X selects state `2`.
 
-Runtime flow:
+RPM runtime flow:
 
 ```text
-base cmd_vel + recent response history
-  -> dynamic affine parameters [a_v, a_omega, b_v, b_omega]
-  -> corrected cmd_vel
-  -> wheel RPM conversion
+base cmd_vel + recent response history + accepted live RPM weights
+  -> dynamic affine parameters [a_right, a_left, b_right, b_left]
+  -> corrected right/left RPM
+  -> CAN frame encoding
   -> CAN frame
 ```
 
@@ -48,3 +49,11 @@ The controller also publishes `std_msgs/msg/Float64MultiArray` debug rows on:
 ```
 
 The trainer consumes that topic to write timestamped Desktop log CSVs.
+
+Live RPM weights are received on:
+
+```text
+/aiformula_control/correction_controller_trainer/rpm_weights
+```
+
+Only accepted trainer checkpoints are published on that topic. If the online trainer keeps learning but the checkpoint score does not improve, the controller continues using the previous accepted weight.

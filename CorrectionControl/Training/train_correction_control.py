@@ -744,6 +744,13 @@ def maybe_run_addon_cli() -> bool:
         "--addon-learning-rate": "--learning-rate",
         "--addon-early-stop-patience": "--early-stop-patience",
         "--addon-batch-size": "--batch-size",
+        "--addon-label": "--label",
+        "--addon-v-loss-weight": "--v-loss-weight",
+        "--addon-omega-loss-weight": "--omega-loss-weight",
+        "--addon-turn-loss-boost": "--turn-loss-boost",
+        "--addon-speed-loss-boost": "--speed-loss-boost",
+        "--addon-lambda-gain": "--lambda-gain",
+        "--addon-lambda-bias": "--lambda-bias",
     }
     has_addon_args = any(arg in addon_flags for arg in sys.argv[1:])
     if not has_addon_args and any(arg in ("-h", "--help") for arg in sys.argv[1:]):

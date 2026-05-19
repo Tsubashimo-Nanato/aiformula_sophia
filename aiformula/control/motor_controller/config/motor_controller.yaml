@@ -2,8 +2,8 @@
   ros__parameters:
     publish_timer_loop_duration: 0.01
 
-    # 0: ideal diff-drive, 1: copied BKUP tuning, 2: corrected feedforward.
-    controller_state: 2
+    # 0: ideal diff-drive, 1: copied BKUP tuning, 2: live RPM correction.
+    controller_state: 1
 
     model_path: ""
     velocity_body_topic: "/aiformula_sensing/vectornav/velocity_body"
@@ -13,9 +13,14 @@
     state1_button_circle: 1
     state2_button_cross: 0
     debug_topic: "/aiformula_control/motor_controller/correction_debug"
+    rpm_weight_topic: "/aiformula_control/correction_controller_trainer/rpm_weights"
+    rpm_correction_enabled: true
+    rpm_fallback_to_body_correction: false
 
     history_sample_period_sec: 0.05
     history_span_tolerance_sec: 0.30
+    # Set <= 0 to disable linear input command limiting. Applies to all controller states.
+    max_command_v: 4.0
     max_corrected_v: 3.0
     max_corrected_omega: 1.0
     stop_deadband: 0.0001

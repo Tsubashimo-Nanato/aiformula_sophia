@@ -24,6 +24,11 @@ CorrectionControl/
     ros2unbag_exports/
     processed/
   docs/
+corrected_controller_rpm/
+  train_rpm_correction.py
+  models/
+  figures/
+  reports/
 ```
 
 ## What Was Done
@@ -77,6 +82,21 @@ corrected_omega = (base_omega - b_omega) / a_omega
 ```
 
 Then the corrected command goes through the traditional differential-drive RPM conversion and the unchanged 8-byte CAN frame encoding.
+
+There is also a separate RPM-space experiment in:
+
+```text
+corrected_controller_rpm/
+```
+
+That project learns:
+
+```text
+right_rpm = a_right * ideal_right_rpm + b_right
+left_rpm  = a_left  * ideal_left_rpm  + b_left
+```
+
+using state-1 BKUP RPM commands reverse-engineered from the motor controller. The current logs do not contain measured wheel RPM feedback, so this experiment learns command compensation in RPM space, not actual wheel RPM plant response.
 
 See:
 

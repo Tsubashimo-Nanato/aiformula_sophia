@@ -1,0 +1,38 @@
+{
+  "mode": "offline_runtime_rpm_startpoint",
+  "created_at": "2026-05-19T06:17:42",
+  "log_root": "CorrectionControl\\Training\\data",
+  "states": [
+    "s0",
+    "s1",
+    "s2"
+  ],
+  "passes": 4,
+  "total_rows_seen": 17280,
+  "used_rows": 17156,
+  "accepted_samples": 16244,
+  "updates": 16213,
+  "training_halted": false,
+  "divergence_events": 0,
+  "source_files": [
+    "CorrectionControl\\Training\\data\\run_20260518_132537\\s0\\log_20260518_132537.csv",
+    "CorrectionControl\\Training\\data\\run_20260518_132537\\s1\\log_20260518_132537.csv",
+    "CorrectionControl\\Training\\data\\run_20260518_132537\\s2\\log_20260518_132537.csv",
+    "CorrectionControl\\Training\\data\\run_20260518_172344\\s0\\log_20260518_172344.csv",
+    "CorrectionControl\\Training\\data\\run_20260518_172344\\s1\\log_20260518_172344.csv",
+    "CorrectionControl\\Training\\data\\run_20260518_172344\\s2\\log_20260518_172344.csv",
+    "CorrectionControl\\Training\\data\\run_20260518_172502\\s0\\log_20260518_172502.csv",
+    "CorrectionControl\\Training\\data\\run_20260518_172502\\s1\\log_20260518_172502.csv",
+    "CorrectionControl\\Training\\data\\run_20260518_172502\\s2\\log_20260518_172502.csv",
+    "CorrectionControl\\Training\\data\\run_20260518_172615\\s0\\log_20260518_172615.csv",
+    "CorrectionControl\\Training\\data\\run_20260518_172615\\s1\\log_20260518_172615.csv",
+    "CorrectionControl\\Training\\data\\run_20260518_172615\\s2\\log_20260518_172615.csv"
+  ],
+  "outputs": {
+    "run_dir": "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941",
+    "startpoint": "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941\\weights\\corrected_controller_rpm_startpoint.pt",
+    "final": "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941\\weights\\corrected_controller_rpm_final.pt",
+    "latest": "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941\\weights\\corrected_controller_rpm_latest.pt",
+    "checkpoints": "C:\\Users\\asus\\Desktop\\Workspace\\aiformula_sophia\\pid_ws\\src\\correction_controller_trainer\\startpoint_weights\\run_20260519_060941\\weights\\checkpoints"
+  }
+}
